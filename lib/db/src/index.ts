@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+import { attachDatabasePool } from "@vercel/functions";
 import pg from "pg";
 import * as schema from "./schema";
 
@@ -10,7 +11,11 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  idleTimeoutMillis: 5_000,
+});
+attachDatabasePool(pool);
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";

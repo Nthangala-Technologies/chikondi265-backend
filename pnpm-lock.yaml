@@ -558,7 +558,7 @@ importers:
     devDependencies:
       orval:
         specifier: ^8.41.0
-        version: 8.41.0(@tanstack/react-query@5.104.1(react@19.2.3))(prettier@3.9.10)(typescript@6.0.3)(zod@4.6.5)
+        version: 8.41.0(@tanstack/react-query@5.104.1(react@19.2.3))(prettier@3.9.10)(typescript@6.0.3)(zod@4.6.7)
 
   lib/api-zod:
     dependencies:
@@ -568,6 +568,9 @@ importers:
 
   lib/db:
     dependencies:
+      '@vercel/functions':
+        specifier: ^3.11.1
+        version: 3.11.1(ws@8.22.0)
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@types/pg@8.23.1)(pg@8.23.1)
@@ -2303,6 +2306,29 @@ packages:
   '@ungap/structured-clone@1.4.0':
     resolution: {integrity: sha512-1mEZtMKPM09vDmQt5y7YvmN2+DFTP7Tg0EWXdic8/C6VRnpb33e4ghisCIE3WZjsE2N8mf+QV1Zqh7ZFYLWInQ==}
 
+  '@vercel/cli-config@0.3.8':
+    resolution: {integrity: sha512-C6av1p4tN+rHIcD0rdlsx3y9SaosRUU67dbgrjbLG8KdAK8oNVzfKg0ckV+1qWh5VC/Ft1BN3Pg/PuXSKNFVOA==}
+
+  '@vercel/cli-exec@1.0.1':
+    resolution: {integrity: sha512-g9XerViJ/paZujufXYcu5XYI2vU2rtB4sgdpjUHde5RnOkdmpu0ngH46LCFGHoPXO/C+qDPSczIHIRN+8Q2YKQ==}
+    engines: {node: '>= 18'}
+
+  '@vercel/functions@3.11.1':
+    resolution: {integrity: sha512-tZoePP4TRh25G5VNsWuLanANvfq0wdbvoUdabhoc8UT2QxIXj6mfoqXE4ycOm6CZyZuAN9dHqU51vuijPXjTcg==}
+    engines: {node: '>= 20'}
+    peerDependencies:
+      '@aws-sdk/credential-provider-web-identity': '*'
+      ws: '>=8'
+    peerDependenciesMeta:
+      '@aws-sdk/credential-provider-web-identity':
+        optional: true
+      ws:
+        optional: true
+
+  '@vercel/oidc@4.0.8':
+    resolution: {integrity: sha512-8wcmhuhrEsQlgTvPfRIeE4Y2geSaid0a1DP+um1PfNK4ETjqnfGTL5k5l7vS2T8A2gOx/MV7yNGxUJTs+0tqPQ==}
+    engines: {node: '>= 20'}
+
   '@vitejs/plugin-react@5.2.0':
     resolution: {integrity: sha512-YmKkfhOAi3wsB1PhJq5Scj3GXMn3WvtQ/JC0xoopuHoXSdmtdStOpFrYaT1kie2YgFBcIe64ROzMYRjCrYOdYw==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -3050,6 +3076,10 @@ packages:
   eventemitter3@4.0.7:
     resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
 
+  execa@5.1.1:
+    resolution: {integrity: sha512-8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==}
+    engines: {node: '>=10'}
+
   execa@9.6.1:
     resolution: {integrity: sha512-9Be3ZoN4LmYR90tUoVu2te2BsbzHfhJyfEiAVfz7N5/zv+jduIfLrV2xdQXOHbaD6KgpGdO9PRPM1Y4Q9QkPkA==}
     engines: {node: ^18.19.0 || >=20.5.0}
@@ -3400,6 +3430,10 @@ packages:
     resolution: {integrity: sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==}
     engines: {node: '>= 0.4'}
 
+  get-stream@6.0.1:
+    resolution: {integrity: sha512-ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==}
+    engines: {node: '>=10'}
+
   get-stream@9.0.1:
     resolution: {integrity: sha512-kVCxPF3vQM/N0B1PmoqVUqgHP+EeVjmZSQn+1oCRPxd2P21P2F19lIgbR3HBosbB1PUhOAoctJnfEn2GbN2eZA==}
     engines: {node: '>=18'}
@@ -3480,6 +3514,10 @@ packages:
   https-proxy-agent@7.0.6:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
+
+  human-signals@2.1.0:
+    resolution: {integrity: sha512-B4FFZ6q/T2jhhksgkbEW3HBvWIfDW85snkQgawt07S7J5QXTk6BkNV+0yAeZrM5QpMAdYlocGoljn0sJ/WQkFw==}
+    engines: {node: '>=10.17.0'}
 
   human-signals@8.0.1:
     resolution: {integrity: sha512-eKCa6bwnJhvxj14kZk5NCPc6Hb6BdsU9DZcOnmQKSnO1VKrfV0zCvtttPZUsBvjmNDn8rpcJfpwSYnHBjc95MQ==}
@@ -3562,6 +3600,10 @@ packages:
   is-promise@4.0.0:
     resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==}
 
+  is-stream@2.0.1:
+    resolution: {integrity: sha512-hFoiJiTl63nn+kstHGBtewWSKnQLpyb155KHheA1l39uvtO9nWIop1p3udqPcUd/xbF1VLMO4n7OI6p7RbngDg==}
+    engines: {node: '>=8'}
+
   is-stream@4.0.1:
     resolution: {integrity: sha512-Dnz92NInDqYckGEUJv689RbRiTSEHCQ7wOVeALbkOz999YpqT46yMRIGtSNl2iCL1waAZSx40+h59NV/EwzV/A==}
     engines: {node: '>=18'}
@@ -3599,6 +3641,9 @@ packages:
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
+
+  jose@5.10.0:
+    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
 
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
@@ -3871,6 +3916,10 @@ packages:
     resolution: {integrity: sha512-jf84uxzwiuiIVKiOLpfYk7N46TSy8ubTonmneY9vrpHNAnp0QBt2BxWV9dO3/j+BoVAb+a5G6YDPW3M5HOdMWQ==}
     engines: {node: '>=4'}
 
+  mimic-fn@2.1.0:
+    resolution: {integrity: sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==}
+    engines: {node: '>=6'}
+
   minimatch@10.2.6:
     resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
     engines: {node: 18 || 20 || >=22}
@@ -3965,6 +4014,10 @@ packages:
     resolution: {integrity: sha512-sHGJy8sOC1YraBywpzQlIKBE4pBbGbiF95U6Auspzyem956E0+FtDtsx1ZxlOJkQCZ1AFXAY/yuvtFYrOxF+Bw==}
     engines: {node: ^16.14.0 || >=18.0.0}
 
+  npm-run-path@4.0.1:
+    resolution: {integrity: sha512-S48WzZW777zhNIrn7gxOlISNAqi9ZC/uQFnRdbeIHhZhCA6UqpkOT8T1G7BvfdgP4Er8gF4sUbaS0i7QvIfCWw==}
+    engines: {node: '>=8'}
+
   npm-run-path@6.0.0:
     resolution: {integrity: sha512-9qny7Z9DsQU8Ou39ERsPU4OZQlSTP47ShQzuKZ6PRXpYLtIFgl/DEBYEXKlvcEa+9tHVcK8CF81Y2V72qaZhWA==}
     engines: {node: '>=18'}
@@ -4014,6 +4067,10 @@ packages:
     resolution: {integrity: sha512-oyyPpiMaKARvvcgip+JV+7zci5L8D1W9RZIz2l1o08AM3pfspitVWnPt3mzHcBPp12oYMTy0pqrFs/C+m3EwsQ==}
     engines: {node: '>=4'}
 
+  onetime@5.1.2:
+    resolution: {integrity: sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==}
+    engines: {node: '>=6'}
+
   open@7.4.2:
     resolution: {integrity: sha512-MVHddDVweXZF3awtlAS+6pgKLlm/JgxZ90+/NBurBoQctVOOB/zDdVjcyPzQ+0laDGbsWgrRkflI65sQeOgT9Q==}
     engines: {node: '>=8'}
@@ -4037,6 +4094,10 @@ packages:
         optional: true
       typedoc-plugin-markdown:
         optional: true
+
+  os-paths@4.4.0:
+    resolution: {integrity: sha512-wrAwOeXp1RRMFfQY8Sy7VaGVmPocaLwSFOYCGKSyo8qmJ+/yaafCl5BCA1IQZWqFSRBrKDYFeR9d/VyQzfH/jg==}
+    engines: {node: '>= 6.0'}
 
   parse-ms@4.0.0:
     resolution: {integrity: sha512-TXfryirbmq34y8QBwgqCVLi+8oA3oWx2eAnSn62ITyEhEYaWRlVZ2DvMM9eZbMs/RfxPu/PK/aBLyGj4IrqMHw==}
@@ -4717,6 +4778,10 @@ packages:
     resolution: {integrity: sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==}
     engines: {node: '>=8'}
 
+  strip-final-newline@2.0.0:
+    resolution: {integrity: sha512-BrpvfNAE3dcvq7ll3xVumzjKjZQ5tI1sEUIKr3Uoks0XUl45St3FlatVqef9prk4jRDzhW6WZg+3bk93y6pLjA==}
+    engines: {node: '>=6'}
+
   strip-final-newline@4.0.0:
     resolution: {integrity: sha512-aulFJcD6YK8V1G7iRB5tigAP4TsHBZZrOV8pjV++zdUwmeV8uzbY7yn6h9MswN62adStNZFuCIx4haBnRuMDaw==}
     engines: {node: '>=18'}
@@ -5037,6 +5102,14 @@ packages:
     resolution: {integrity: sha512-dDaoWzc9EP2fp9FS9PVZUkyvFxY4y1TOV9pcKaKLk++Ei/qb97XDFEVP7GnW7Osii/TzVABJ0jq2F+9/lq0TVA==}
     engines: {node: '>=14.17.0'}
 
+  xdg-app-paths@5.5.1:
+    resolution: {integrity: sha512-hI3flOB4PLZIy5prbtTpirobtPE2ZtZ52szO+2mM9Efp6ErM398La+C1lIpNWDfNoQk+6Lsi6nMcCwVB7pxeMQ==}
+    engines: {node: '>= 6.0'}
+
+  xdg-portable@7.3.0:
+    resolution: {integrity: sha512-sqMMuL1rc0FmMBOzCpd0yuy9trqF2yTTVe+E9ogwCSWQCdDEtQUwrZPT6AxqtsFGRNxycgncbP/xmOOSPw5ZUw==}
+    engines: {node: '>= 6.0'}
+
   xml2js@0.6.0:
     resolution: {integrity: sha512-eLTh0kA8uHceqesPqSE+VvO1CDDJWMwlQfB6LuN6T8w6MaDJ8Txm8P7s5cHD0miF0V+GGTZrDQfxPZQVsur33w==}
     engines: {node: '>=4.0.0'}
@@ -5088,6 +5161,9 @@ packages:
 
   zod@4.6.5:
     resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
+
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
 snapshots:
 
@@ -6098,21 +6174,21 @@ snapshots:
     transitivePeerDependencies:
       - '@faker-js/faker'
 
-  '@orval/hono@8.41.0(typescript@6.0.3)(zod@4.6.5)':
+  '@orval/hono@8.41.0(typescript@6.0.3)(zod@4.6.7)':
     dependencies:
       '@orval/core': 8.41.0
-      '@orval/zod': 8.41.0(zod@4.6.5)
+      '@orval/zod': 8.41.0(zod@4.6.7)
     optionalDependencies:
       typescript: 6.0.3
     transitivePeerDependencies:
       - '@faker-js/faker'
       - zod
 
-  '@orval/mcp@8.41.0(zod@4.6.5)':
+  '@orval/mcp@8.41.0(zod@4.6.7)':
     dependencies:
       '@orval/core': 8.41.0
       '@orval/fetch': 8.41.0
-      '@orval/zod': 8.41.0(zod@4.6.5)
+      '@orval/zod': 8.41.0(zod@4.6.7)
     transitivePeerDependencies:
       - '@faker-js/faker'
       - zod
@@ -6151,12 +6227,12 @@ snapshots:
     transitivePeerDependencies:
       - '@faker-js/faker'
 
-  '@orval/zod@8.41.0(zod@4.6.5)':
+  '@orval/zod@8.41.0(zod@4.6.7)':
     dependencies:
       '@orval/core': 8.41.0
       jsesc: 3.1.0
     optionalDependencies:
-      zod: 4.6.5
+      zod: 4.6.7
     transitivePeerDependencies:
       - '@faker-js/faker'
 
@@ -7375,6 +7451,27 @@ snapshots:
 
   '@ungap/structured-clone@1.4.0': {}
 
+  '@vercel/cli-config@0.3.8':
+    dependencies:
+      xdg-app-paths: 5.5.1
+      zod: 4.6.7
+
+  '@vercel/cli-exec@1.0.1':
+    dependencies:
+      execa: 5.1.1
+
+  '@vercel/functions@3.11.1(ws@8.22.0)':
+    dependencies:
+      '@vercel/oidc': 4.0.8
+    optionalDependencies:
+      ws: 8.22.0
+
+  '@vercel/oidc@4.0.8':
+    dependencies:
+      '@vercel/cli-config': 0.3.8
+      '@vercel/cli-exec': 1.0.1
+      jose: 5.10.0
+
   '@vitejs/plugin-react@5.2.0(vite@7.3.7(@types/node@25.9.9)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
       '@babel/core': 7.29.7
@@ -8038,6 +8135,18 @@ snapshots:
 
   eventemitter3@4.0.7: {}
 
+  execa@5.1.1:
+    dependencies:
+      cross-spawn: 7.0.6
+      get-stream: 6.0.1
+      human-signals: 2.1.0
+      is-stream: 2.0.1
+      merge-stream: 2.0.0
+      npm-run-path: 4.0.1
+      onetime: 5.1.2
+      signal-exit: 3.0.7
+      strip-final-newline: 2.0.0
+
   execa@9.6.1:
     dependencies:
       '@sindresorhus/merge-streams': 4.0.0
@@ -8480,6 +8589,8 @@ snapshots:
       dunder-proto: 1.0.1
       es-object-atoms: 1.1.2
 
+  get-stream@6.0.1: {}
+
   get-stream@9.0.1:
     dependencies:
       '@sec-ant/readable-stream': 0.4.1
@@ -8560,6 +8671,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  human-signals@2.1.0: {}
+
   human-signals@8.0.1: {}
 
   hyphenate-style-name@1.1.0: {}
@@ -8615,6 +8728,8 @@ snapshots:
 
   is-promise@4.0.0: {}
 
+  is-stream@2.0.1: {}
+
   is-stream@4.0.1: {}
 
   is-unicode-supported@2.1.0: {}
@@ -8655,6 +8770,8 @@ snapshots:
   jimp-compact@0.16.1: {}
 
   jiti@2.7.0: {}
+
+  jose@5.10.0: {}
 
   joycon@3.1.1: {}
 
@@ -9117,6 +9234,8 @@ snapshots:
 
   mimic-fn@1.2.0: {}
 
+  mimic-fn@2.1.0: {}
+
   minimatch@10.2.6:
     dependencies:
       brace-expansion: 5.0.12
@@ -9179,6 +9298,10 @@ snapshots:
       semver: 7.8.5
       validate-npm-package-name: 5.0.1
 
+  npm-run-path@4.0.1:
+    dependencies:
+      path-key: 3.1.1
+
   npm-run-path@6.0.0:
     dependencies:
       path-key: 4.0.0
@@ -9222,6 +9345,10 @@ snapshots:
     dependencies:
       mimic-fn: 1.2.0
 
+  onetime@5.1.2:
+    dependencies:
+      mimic-fn: 2.1.0
+
   open@7.4.2:
     dependencies:
       is-docker: 2.2.1
@@ -9236,7 +9363,7 @@ snapshots:
       strip-ansi: 5.2.0
       wcwidth: 1.0.1
 
-  orval@8.41.0(@tanstack/react-query@5.104.1(react@19.2.3))(prettier@3.9.10)(typescript@6.0.3)(zod@4.6.5):
+  orval@8.41.0(@tanstack/react-query@5.104.1(react@19.2.3))(prettier@3.9.10)(typescript@6.0.3)(zod@4.6.7):
     dependencies:
       '@commander-js/extra-typings': 15.0.0(commander@15.0.0)
       '@orval/angular': 8.41.0
@@ -9244,14 +9371,14 @@ snapshots:
       '@orval/core': 8.41.0
       '@orval/effect': 8.41.0
       '@orval/fetch': 8.41.0
-      '@orval/hono': 8.41.0(typescript@6.0.3)(zod@4.6.5)
-      '@orval/mcp': 8.41.0(zod@4.6.5)
+      '@orval/hono': 8.41.0(typescript@6.0.3)(zod@4.6.7)
+      '@orval/mcp': 8.41.0(zod@4.6.7)
       '@orval/mock': 8.41.0
       '@orval/pinia-colada': 8.41.0
       '@orval/query': 8.41.0(@tanstack/react-query@5.104.1(react@19.2.3))
       '@orval/solid-start': 8.41.0
       '@orval/swr': 8.41.0
-      '@orval/zod': 8.41.0(zod@4.6.5)
+      '@orval/zod': 8.41.0(zod@4.6.7)
       '@scalar/json-magic': 0.15.6
       '@scalar/openapi-parser': 0.29.12
       '@scalar/openapi-types': 0.9.7
@@ -9279,6 +9406,8 @@ snapshots:
       - swr
       - typescript
       - zod
+
+  os-paths@4.4.0: {}
 
   parse-ms@4.0.0: {}
 
@@ -10049,6 +10178,8 @@ snapshots:
     dependencies:
       ansi-regex: 5.0.1
 
+  strip-final-newline@2.0.0: {}
+
   strip-final-newline@4.0.0: {}
 
   strip-json-comments@5.0.3: {}
@@ -10315,6 +10446,15 @@ snapshots:
     dependencies:
       simple-plist: 1.3.1
 
+  xdg-app-paths@5.5.1:
+    dependencies:
+      os-paths: 4.4.0
+      xdg-portable: 7.3.0
+
+  xdg-portable@7.3.0:
+    dependencies:
+      os-paths: 4.4.0
+
   xml2js@0.6.0:
     dependencies:
       sax: 1.6.1
@@ -10353,3 +10493,5 @@ snapshots:
   zod@3.25.76: {}
 
   zod@4.6.5: {}
+
+  zod@4.6.7: {}
