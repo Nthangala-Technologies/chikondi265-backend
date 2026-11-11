@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ProfilePhotoId } from './profilePhotoId';
 
 export interface Profile {
   userId: string;
@@ -17,6 +18,7 @@ export interface Profile {
   intention: string;
   visibilityStatus: string;
   verificationStatus: string;
+  photoId: ProfilePhotoId;
   createdAt: string;
   updatedAt: string;
 }

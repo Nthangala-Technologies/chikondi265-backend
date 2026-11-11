@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PublicProfilePhotoId } from './publicProfilePhotoId';
 import type { PublicProfileVerificationStatus } from './publicProfileVerificationStatus';
 
 export interface PublicProfile {
@@ -18,4 +19,5 @@ export interface PublicProfile {
   interests: string[];
   intention: string;
   verificationStatus: PublicProfileVerificationStatus;
+  photoId: PublicProfilePhotoId;
 }

@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import {
   db,
+  profilePhotosTable,
   profilesTable,
   userPreferencesTable,
   usersTable,
@@ -9,6 +10,12 @@ import type {
   DiscoveryPreferencesInput,
   ProfileInput,
 } from "@workspace/api-zod";
+import {
+  avatarIdFromObjectKey,
+  avatarObjectKey,
+  defaultAvatarForUser,
+  type GeneratedProfileAvatarId,
+} from "./avatars";
 
 export async function getOwnProfile(userId: string) {
   const [profile] = await db
@@ -17,7 +24,47 @@ export async function getOwnProfile(userId: string) {
     .where(eq(profilesTable.userId, userId))
     .limit(1);
 
-  return profile ?? null;
+  return profile
+    ? { ...profile, photoId: await getOwnProfilePhotoId(userId) }
+    : null;
+}
+
+export async function getOwnProfilePhotoId(userId: string) {
+  const [photo] = await db
+    .select({ objectKey: profilePhotosTable.objectKey })
+    .from(profilePhotosTable)
+    .where(
+      and(
+        eq(profilePhotosTable.userId, userId),
+        eq(profilePhotosTable.position, 0),
+        eq(profilePhotosTable.moderationStatus, "approved"),
+      ),
+    )
+    .limit(1);
+
+  return avatarIdFromObjectKey(photo?.objectKey) ?? defaultAvatarForUser(userId);
+}
+
+export async function saveOwnProfilePhotoId(
+  userId: string,
+  avatarId: GeneratedProfileAvatarId,
+) {
+  await db
+    .insert(profilePhotosTable)
+    .values({
+      userId,
+      objectKey: avatarObjectKey(userId, avatarId),
+      position: 0,
+      moderationStatus: "approved",
+    })
+    .onConflictDoUpdate({
+      target: [profilePhotosTable.userId, profilePhotosTable.position],
+      set: {
+        objectKey: avatarObjectKey(userId, avatarId),
+        moderationStatus: "approved",
+        createdAt: new Date(),
+      },
+    });
 }
 
 export async function getOwnAccountEmail(userId: string) {
@@ -50,7 +97,11 @@ export async function saveOwnProfile(userId: string, input: ProfileInput) {
     })
     .returning();
 
-  return profile;
+  if (input.photoId) {
+    await saveOwnProfilePhotoId(userId, input.photoId);
+  }
+
+  return { ...profile, photoId: await getOwnProfilePhotoId(userId) };
 }
 
 export async function getOwnPreferences(userId: string) {

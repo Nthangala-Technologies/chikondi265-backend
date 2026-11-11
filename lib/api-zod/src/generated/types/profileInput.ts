@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ProfileInputPhotoId } from './profileInputPhotoId';
 
 export interface ProfileInput {
   /**
@@ -33,4 +34,5 @@ export interface ProfileInput {
      * @maxLength 40
      */
   intention: string;
+  photoId?: ProfileInputPhotoId;
 }

@@ -17,6 +17,7 @@ import {
   connectionsTable,
   db,
   messagesTable,
+  profilePhotosTable,
   profilesTable,
   swipesTable,
   userPreferencesTable,
@@ -28,6 +29,11 @@ import {
   isPositiveSwipe,
   type MatchingViewer,
 } from "./policy";
+import {
+  avatarIdFromObjectKey,
+  defaultAvatarForUser,
+  type GeneratedProfileAvatarId,
+} from "../profiles/avatars";
 
 type MatchingExecutor = Pick<typeof db, "select">;
 
@@ -41,6 +47,7 @@ export interface PublicProfile {
   interests: string[];
   intention: string;
   verificationStatus: string;
+  photoId: GeneratedProfileAvatarId;
 }
 
 export interface ConnectionView {
@@ -253,7 +260,7 @@ export async function findDiscoveryPage(
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
   return {
-    items: page,
+    items: await attachPhotoIds(page),
     nextCursor: hasMore ? (page.at(-1)?.userId ?? null) : null,
   };
 }
@@ -294,21 +301,14 @@ export async function findIncomingLikes(
     .orderBy(desc(swipesTable.createdAt))
     .limit(50);
 
-  return rows.map((row) => ({
-    action: row.action as "like" | "super",
-    createdAt: row.createdAt,
-    profile: {
-      userId: row.userId,
-      displayName: row.displayName,
-      age: row.age,
-      city: row.city,
-      countryCode: row.countryCode,
-      bio: row.bio,
-      interests: row.interests,
-      intention: row.intention,
-      verificationStatus: row.verificationStatus,
-    },
-  }));
+  return (await attachPhotoIds(rows)).map((row) => {
+    const { action, createdAt, ...profile } = row;
+    return {
+      action: action as "like" | "super",
+      createdAt,
+      profile,
+    };
+  });
 }
 
 export async function findUserNotifications(
@@ -562,7 +562,37 @@ async function getPublicProfiles(
       ),
     );
 
-  return new Map(rows.map((profile) => [profile.userId, profile]));
+  const profiles = await attachPhotoIds(rows);
+  return new Map(profiles.map((profile) => [profile.userId, profile]));
+}
+
+async function attachPhotoIds<T extends { userId: string }>(
+  profiles: T[],
+): Promise<Array<T & { photoId: GeneratedProfileAvatarId }>> {
+  if (profiles.length === 0) return [];
+
+  const userIds = [...new Set(profiles.map((profile) => profile.userId))];
+  const photos = await db
+    .select({
+      userId: profilePhotosTable.userId,
+      objectKey: profilePhotosTable.objectKey,
+    })
+    .from(profilePhotosTable)
+    .where(
+      and(
+        inArray(profilePhotosTable.userId, userIds),
+        eq(profilePhotosTable.position, 0),
+        eq(profilePhotosTable.moderationStatus, "approved"),
+      ),
+    );
+  const photoKeys = new Map(photos.map((photo) => [photo.userId, photo.objectKey]));
+
+  return profiles.map((profile) => ({
+    ...profile,
+    photoId:
+      avatarIdFromObjectKey(photoKeys.get(profile.userId)) ??
+      defaultAvatarForUser(profile.userId),
+  }));
 }
 
 function otherParticipantId(userId: string) {
