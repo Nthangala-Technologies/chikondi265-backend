@@ -433,10 +433,12 @@ export async function findConnectionsForUser(
   const profiles = await getPublicProfiles(
     rows.map((connection) => connection.otherUserId),
   );
-  return rows.map(({ otherUserId: _otherUserId, ...connection }) => ({
-    ...connection,
-    otherProfile: profiles.get(_otherUserId) ?? null,
-  }));
+  return rows
+    .filter((connection) => profiles.has(connection.otherUserId))
+    .map(({ otherUserId: _otherUserId, ...connection }) => ({
+      ...connection,
+      otherProfile: profiles.get(_otherUserId)!,
+    }));
 }
 
 export async function findConnectionForUser(
@@ -465,11 +467,14 @@ export async function findConnectionForUser(
   if (!row) return null;
 
   const profiles = await getPublicProfiles([row.otherUserId]);
+  const otherProfile = profiles.get(row.otherUserId);
+  if (!otherProfile) return null;
+
   return {
     id: row.id,
     status: row.status,
     matchedAt: row.matchedAt,
     chatEnabledAt: row.chatEnabledAt,
-    otherProfile: profiles.get(row.otherUserId) ?? null,
+    otherProfile,
   };
 }
