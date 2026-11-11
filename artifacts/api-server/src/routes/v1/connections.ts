@@ -20,7 +20,14 @@ router.get("/connections", async (_req, res, next): Promise<void> => {
     const connections = await getUserConnections(
       res.locals.userId as string,
     );
-    res.json(GetConnectionsResponse.parse(connections));
+    const serialized = connections.map((connection) => ({
+      ...connection,
+      matchedAt: connection.matchedAt.toISOString(),
+      chatEnabledAt: connection.chatEnabledAt
+        ? connection.chatEnabledAt.toISOString()
+        : null,
+    }));
+    res.json(GetConnectionsResponse.parse(serialized));
   } catch (error) {
     next(error);
   }
@@ -38,7 +45,16 @@ router.get("/connections/:id", async (req, res, next): Promise<void> => {
       res.locals.userId as string,
       parsed.data.id,
     );
-    res.json(GetConnectionResponse.parse(connection));
+    const serialized = connection
+      ? {
+          ...connection,
+          matchedAt: connection.matchedAt.toISOString(),
+          chatEnabledAt: connection.chatEnabledAt
+            ? connection.chatEnabledAt.toISOString()
+            : null,
+        }
+      : connection;
+    res.json(GetConnectionResponse.parse(serialized));
   } catch (error) {
     next(error);
   }
