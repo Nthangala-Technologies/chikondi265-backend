@@ -14,6 +14,7 @@ import {
   getCurrentUserProfile,
   saveCurrentUserProfile,
 } from "../../modules/profiles/service";
+import { getCurrentUserPaymentHistory } from "../../modules/payments/service";
 
 const router = Router();
 
@@ -35,6 +36,16 @@ function collectFieldErrors(
 router.get("/me", async (_req, res, next) => {
   try {
     res.json(await getCurrentUserProfile(res.locals.userId as string));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/me/payment-history", async (_req, res, next) => {
+  try {
+    res.json(
+      await getCurrentUserPaymentHistory(res.locals.userId as string),
+    );
   } catch (error) {
     next(error);
   }

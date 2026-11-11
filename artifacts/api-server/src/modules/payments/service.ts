@@ -14,11 +14,22 @@ import {
 import {
   completePayChanguPayment,
   findConnectionParticipantIds,
+  listPaymentHistoryForUser,
   markPayChanguWebhookFailed,
   recordPayChanguWebhookEvent,
   reservePaymentAttempt,
   storeCheckoutUrl,
 } from "./repository";
+
+export async function getCurrentUserPaymentHistory(payerUserId: string) {
+  const items = await listPaymentHistoryForUser(payerUserId);
+  return {
+    items: items.map((item) => ({
+      ...item,
+      description: "Chat unlock",
+    })),
+  };
+}
 
 export async function createPaymentIntent(input: {
   connectionId: string;

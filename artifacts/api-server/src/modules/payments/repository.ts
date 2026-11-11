@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import {
   connectionsTable,
   db,
@@ -15,6 +15,24 @@ type PaymentAttemptView = {
   status: string;
   checkoutUrl: string | null;
 };
+
+export async function listPaymentHistoryForUser(payerUserId: string) {
+  return db
+    .select({
+      id: paymentAttemptsTable.id,
+      provider: paymentAttemptsTable.provider,
+      reference: paymentAttemptsTable.txRef,
+      amountMwk: paymentAttemptsTable.amountMwk,
+      currency: paymentAttemptsTable.currency,
+      status: paymentAttemptsTable.status,
+      createdAt: paymentAttemptsTable.createdAt,
+      completedAt: paymentAttemptsTable.verifiedAt,
+    })
+    .from(paymentAttemptsTable)
+    .where(eq(paymentAttemptsTable.payerUserId, payerUserId))
+    .orderBy(desc(paymentAttemptsTable.createdAt))
+    .limit(100);
+}
 
 export async function findConnectionParticipantIds(connectionId: string) {
   const [connection] = await db
