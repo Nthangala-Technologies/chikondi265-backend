@@ -18,4 +18,18 @@ router.get("/readyz", async (_req, res) => {
   }
 });
 
+router.get("/admin/user-count", async (_req, res) => {
+  if (process.env.ENABLE_ADMIN_COUNT !== "true") {
+    res.status(404).end();
+    return;
+  }
+
+  try {
+    const result = await pool.query("SELECT COUNT(*)::int AS n FROM users");
+    res.json({ count: result.rows[0].n });
+  } catch {
+    res.status(500).json({ error: "Unable to read user count." });
+  }
+});
+
 export default router;
