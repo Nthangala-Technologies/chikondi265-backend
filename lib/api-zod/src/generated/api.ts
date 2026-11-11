@@ -144,6 +144,14 @@ export const GetCurrentUserResponse = zod.object({
 
 
 /**
+ * @summary Soft-delete the authenticated user's account
+ */
+export const DeleteCurrentAccountResponse = zod.object({
+  "deleted": zod.literal(true)
+})
+
+
+/**
  * @summary Create or replace the authenticated user's profile
  */
 export const saveCurrentUserProfileBodyDisplayNameMax = 50;
@@ -185,6 +193,65 @@ export const SaveCurrentUserProfileResponse = zod.object({
   "verificationStatus": zod.string(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Pause the authenticated user's profile in discovery
+ */
+export const DeactivateCurrentAccountResponse = zod.object({
+  "userId": zod.string().uuid(),
+  "displayName": zod.string(),
+  "birthDate": zod.string().date(),
+  "city": zod.string(),
+  "countryCode": zod.string(),
+  "bio": zod.string(),
+  "interests": zod.array(zod.string()),
+  "intention": zod.string(),
+  "visibilityStatus": zod.string(),
+  "verificationStatus": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Restore the authenticated user's profile in discovery
+ */
+export const ActivateCurrentAccountResponse = zod.object({
+  "userId": zod.string().uuid(),
+  "displayName": zod.string(),
+  "birthDate": zod.string().date(),
+  "city": zod.string(),
+  "countryCode": zod.string(),
+  "bio": zod.string(),
+  "interests": zod.array(zod.string()),
+  "intention": zod.string(),
+  "visibilityStatus": zod.string(),
+  "verificationStatus": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Change the authenticated user's password
+ */
+export const changeCurrentPasswordBodyCurrentPasswordMin = 12;
+export const changeCurrentPasswordBodyCurrentPasswordMax = 128;
+
+export const changeCurrentPasswordBodyNewPasswordMin = 12;
+export const changeCurrentPasswordBodyNewPasswordMax = 128;
+
+
+
+export const ChangeCurrentPasswordBody = zod.object({
+  "currentPassword": zod.string().min(changeCurrentPasswordBodyCurrentPasswordMin).max(changeCurrentPasswordBodyCurrentPasswordMax),
+  "newPassword": zod.string().min(changeCurrentPasswordBodyNewPasswordMin).max(changeCurrentPasswordBodyNewPasswordMax)
+})
+
+export const ChangeCurrentPasswordResponse = zod.object({
+  "changed": zod.literal(true)
 })
 
 

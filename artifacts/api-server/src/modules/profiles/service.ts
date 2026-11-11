@@ -27,14 +27,31 @@ export async function saveCurrentUserProfile(
     city: input.city.trim(),
     bio: input.bio?.trim() ?? "",
     intention: input.intention.trim(),
+    interests: input.interests?.map((interest) => interest.trim()) ?? [],
   };
 
-  if (
-    !normalized.displayName ||
-    !normalized.city ||
-    !normalized.intention
-  ) {
-    throw new ApiError(400, "BAD_REQUEST", "Required profile fields are empty.");
+  const fieldErrors: Record<string, string[]> = {};
+  if (!normalized.displayName) {
+    fieldErrors.displayName = ["Enter a display name."];
+  }
+  if (!normalized.city) {
+    fieldErrors.city = ["Enter a city."];
+  }
+  if (!normalized.intention) {
+    fieldErrors.intention = ["Choose an intention."];
+  }
+  if (normalized.interests.some((interest) => !interest)) {
+    fieldErrors.interests = ["Remove blank interests."];
+  } else if (new Set(normalized.interests).size !== normalized.interests.length) {
+    fieldErrors.interests = ["Each interest must be unique."];
+  }
+  if (Object.keys(fieldErrors).length > 0) {
+    throw new ApiError(
+      400,
+      "BAD_REQUEST",
+      "Some profile fields need attention.",
+      fieldErrors,
+    );
   }
 
   if (!isAtLeast18(normalized.birthDate)) {
@@ -42,6 +59,7 @@ export async function saveCurrentUserProfile(
       400,
       "BAD_REQUEST",
       "You must be at least 18 to create a profile.",
+      { birthDate: ["You must be at least 18 years old."] },
     );
   }
 

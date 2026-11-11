@@ -8,7 +8,10 @@
 
 export * from './apiErrorEnvelope';
 export * from './apiErrorEnvelopeError';
+export * from './apiErrorEnvelopeErrorFieldErrors';
 export * from './authSessionResponse';
+export * from './changePasswordInput';
+export * from './changePasswordResponse';
 export * from './connection';
 export * from './connectionStatus';
 export * from './currentUserResponse';
@@ -21,6 +24,7 @@ export * from './profileInput';
 export * from './publicProfile';
 export * from './publicProfileVerificationStatus';
 export * from './registerAccountInput';
+export * from './softDeleteAccountResult';
 export * from './swipeInput';
 export * from './swipeInputAction';
 export * from './swipeResult';

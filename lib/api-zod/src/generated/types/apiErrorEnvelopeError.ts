@@ -5,9 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ApiErrorEnvelopeErrorFieldErrors } from './apiErrorEnvelopeErrorFieldErrors';
 
 export type ApiErrorEnvelopeError = {
   code: string;
   message: string;
   requestId: string;
+  fieldErrors?: ApiErrorEnvelopeErrorFieldErrors;
 };

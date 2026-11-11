@@ -18,6 +18,7 @@ export class ApiError extends Error {
     public readonly statusCode: number,
     public readonly code: ApiErrorCode,
     message: string,
+    public readonly fieldErrors?: Record<string, string[]>,
   ) {
     super(message);
     this.name = "ApiError";
@@ -40,6 +41,7 @@ export const errorHandler: ErrorRequestHandler = (
         code: error.code,
         message: error.message,
         requestId: String(req.id),
+        ...(error.fieldErrors ? { fieldErrors: error.fieldErrors } : {}),
       },
     });
     return;
