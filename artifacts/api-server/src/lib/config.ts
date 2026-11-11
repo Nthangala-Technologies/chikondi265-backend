@@ -41,3 +41,13 @@ export const runtimeConfig = Object.freeze({
   port,
   corsOrigins: Object.freeze(corsOrigins),
 });
+
+const replitPreviewOriginPattern =
+  /^https:\/\/[a-z0-9-]+\.expo\.riker\.replit\.dev$/i;
+
+export function isAllowedCorsOrigin(origin: string): boolean {
+  return (
+    runtimeConfig.corsOrigins.includes(origin) ||
+    replitPreviewOriginPattern.test(origin)
+  );
+}

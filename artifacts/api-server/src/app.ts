@@ -3,7 +3,7 @@ import cors from "cors";
 import { randomUUID } from "node:crypto";
 import pinoHttp from "pino-http";
 import router from "./routes";
-import { runtimeConfig } from "./lib/config";
+import { isAllowedCorsOrigin } from "./lib/config";
 import { logger } from "./lib/logger";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 
@@ -43,7 +43,7 @@ app.use(
         return;
       }
 
-      callback(null, runtimeConfig.corsOrigins.includes(origin));
+      callback(null, isAllowedCorsOrigin(origin));
     },
   }),
 );
