@@ -15,7 +15,7 @@ export type MessageCursor = {
 export async function findChatAccess(
   userId: string,
   connectionId: string,
-): Promise<boolean> {
+): Promise<string[] | null> {
   const [connection] = await db
     .select({
       userLowId: connectionsTable.userLowId,
@@ -33,7 +33,7 @@ export async function findChatAccess(
     connection.status !== "chat_enabled" ||
     connection.closedAt
   ) {
-    return false;
+    return null;
   }
 
   const [block] = await db
@@ -53,7 +53,8 @@ export async function findChatAccess(
     )
     .limit(1);
 
-  return !block;
+  if (block) return null;
+  return [connection.userLowId, connection.userHighId];
 }
 
 export async function listConnectionMessages(

@@ -16,6 +16,21 @@ type PaymentAttemptView = {
   checkoutUrl: string | null;
 };
 
+export async function findConnectionParticipantIds(connectionId: string) {
+  const [connection] = await db
+    .select({
+      userLowId: connectionsTable.userLowId,
+      userHighId: connectionsTable.userHighId,
+    })
+    .from(connectionsTable)
+    .where(eq(connectionsTable.id, connectionId))
+    .limit(1);
+
+  return connection
+    ? [connection.userLowId, connection.userHighId]
+    : [];
+}
+
 export async function reservePaymentAttempt(input: {
   connectionId: string;
   payerUserId: string;

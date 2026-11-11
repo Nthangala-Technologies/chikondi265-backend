@@ -1,5 +1,6 @@
 import { db } from "@workspace/db";
 import { ApiError } from "../../middleware/error-handler";
+import { publishUserDataUpdates } from "../realtime/service";
 import {
   findConnectionForUser,
   findConnectionsForUser,
@@ -44,6 +45,7 @@ export async function recordUserSwipe(
     }
     throw new ApiError(404, "NOT_FOUND", "The target profile is not available.");
   }
+  await publishUserDataUpdates([userId, targetUserId]);
   return result;
 }
 

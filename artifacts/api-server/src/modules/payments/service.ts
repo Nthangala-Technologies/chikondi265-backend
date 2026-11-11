@@ -5,6 +5,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { ApiError } from "../../middleware/error-handler";
+import { publishUserDataUpdates } from "../realtime/service";
 import {
   createPayChanguCheckout,
   PayChanguProviderError,
@@ -12,6 +13,7 @@ import {
 } from "./paychangu-provider";
 import {
   completePayChanguPayment,
+  findConnectionParticipantIds,
   markPayChanguWebhookFailed,
   recordPayChanguWebhookEvent,
   reservePaymentAttempt,
@@ -192,4 +194,6 @@ export async function receivePayChanguWebhook(
     eventId,
     providerTransactionId: verification.providerTransactionId,
   });
+  const participants = await findConnectionParticipantIds(attempt.connectionId);
+  await publishUserDataUpdates(participants);
 }

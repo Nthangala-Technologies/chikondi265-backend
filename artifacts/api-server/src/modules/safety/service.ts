@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import type { CreateSafetyReportInput } from "@workspace/api-zod";
 import { ApiError } from "../../middleware/error-handler";
+import { publishUserDataUpdates } from "../realtime/service";
 
 export async function createUserBlock(
   blockerUserId: string,
@@ -30,6 +31,7 @@ export async function createUserBlock(
     .insert(blocksTable)
     .values({ blockerUserId, blockedUserId })
     .onConflictDoNothing();
+  await publishUserDataUpdates([blockerUserId, blockedUserId]);
   return { blocked: true as const };
 }
 
@@ -45,6 +47,7 @@ export async function removeUserBlock(
         eq(blocksTable.blockedUserId, blockedUserId),
       ),
     );
+  await publishUserDataUpdates([blockerUserId, blockedUserId]);
   return { unblocked: true as const };
 }
 

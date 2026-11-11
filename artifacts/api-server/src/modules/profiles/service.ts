@@ -11,6 +11,7 @@ import {
   saveOwnProfile,
 } from "./repository";
 import { isAtLeast18 } from "./age-policy";
+import { publishUserDataUpdates } from "../realtime/service";
 
 export { isAtLeast18 } from "./age-policy";
 
@@ -68,7 +69,9 @@ export async function saveCurrentUserProfile(
     );
   }
 
-  return saveOwnProfile(userId, normalized);
+  const saved = await saveOwnProfile(userId, normalized);
+  await publishUserDataUpdates([userId]);
+  return saved;
 }
 
 export async function getCurrentPreferences(userId: string) {
@@ -122,6 +125,7 @@ export async function saveCurrentPreferences(
     interests,
     cities,
   });
+  await publishUserDataUpdates([userId]);
   return {
     ageMin: saved.ageMin,
     ageMax: saved.ageMax,

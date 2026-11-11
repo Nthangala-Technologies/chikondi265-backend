@@ -8,6 +8,7 @@ import messagesRouter from "./messages";
 import notificationsRouter from "./notifications";
 import paymentsRouter from "./payments";
 import preferencesRouter from "./preferences";
+import realtimeRouter from "./realtime";
 import safetyRouter from "./safety";
 import swipesRouter from "./swipes";
 
@@ -21,6 +22,7 @@ router.use(likesRouter);
 router.use(swipesRouter);
 router.use(connectionsRouter);
 router.use(notificationsRouter);
+router.use(realtimeRouter);
 router.use(paymentsRouter);
 router.use(messagesRouter);
 router.use(safetyRouter);

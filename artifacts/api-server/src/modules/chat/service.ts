@@ -6,6 +6,7 @@ import {
   saveConnectionMessage,
   type MessageCursor,
 } from "./repository";
+import { publishUserDataUpdates } from "../realtime/service";
 
 const pageSize = 30;
 const uuidPattern =
@@ -74,14 +75,16 @@ function decodeCursor(value: string): MessageCursor {
 export async function assertChatAccess(
   userId: string,
   connectionId: string,
-): Promise<void> {
-  if (!(await findChatAccess(userId, connectionId))) {
+): Promise<string[]> {
+  const participants = await findChatAccess(userId, connectionId);
+  if (!participants) {
     throw new ApiError(
       403,
       "FORBIDDEN",
       "Chat is unavailable for this connection.",
     );
   }
+  return participants;
 }
 
 export async function getConnectionMessagePage(
@@ -122,7 +125,7 @@ export async function createConnectionMessage(input: {
   clientMessageId: string;
   body: string;
 }) {
-  await assertChatAccess(input.userId, input.connectionId);
+  const participants = await assertChatAccess(input.userId, input.connectionId);
   const saved = await saveConnectionMessage({
     connectionId: input.connectionId,
     senderUserId: input.userId,
@@ -136,6 +139,9 @@ export async function createConnectionMessage(input: {
       "CONFLICT",
       "This client message ID was already used.",
     );
+  }
+  if (saved.created) {
+    await publishUserDataUpdates(participants);
   }
 
   return {
