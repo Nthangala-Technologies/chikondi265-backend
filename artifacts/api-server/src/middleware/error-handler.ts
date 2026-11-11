@@ -11,6 +11,7 @@ export type ApiErrorCode =
   | "NOT_FOUND"
   | "CONFLICT"
   | "RATE_LIMITED"
+  | "PAYMENT_PROVIDER_ERROR"
   | "INTERNAL_ERROR";
 
 export class ApiError extends Error {

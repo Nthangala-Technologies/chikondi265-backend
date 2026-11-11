@@ -435,3 +435,41 @@ export const GetConnectionMessagesAfterCursorResponse = zod.object({
 })
 
 
+/**
+ * @summary Create a payment intent for a matched connection
+ */
+export const CreatePaymentIntentParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createPaymentIntentBodyIdempotencyKeyMax = 255;
+
+
+
+export const CreatePaymentIntentBody = zod.object({
+  "idempotencyKey": zod.string().min(1).max(createPaymentIntentBodyIdempotencyKeyMax).optional()
+})
+
+export const CreatePaymentIntentResponse = zod.object({
+  "checkoutUrl": zod.string().url(),
+  "txRef": zod.string(),
+  "paymentAttemptId": zod.string().uuid()
+})
+
+
+/**
+ * @summary Receive a signature-verified PayChangu webhook
+ */
+export const ReceivePaychanguWebhookHeader = zod.object({
+  "Signature": zod.string()
+})
+
+export const ReceivePaychanguWebhookBody = zod.object({
+  "tx_ref": zod.string().optional()
+})
+
+export const ReceivePaychanguWebhookResponse = zod.object({
+  "received": zod.literal(true)
+})
+
+

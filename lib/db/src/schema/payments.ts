@@ -29,6 +29,7 @@ export const paymentAttemptsTable = pgTable(
       .references(() => usersTable.id),
     provider: text("provider").notNull(),
     txRef: text("tx_ref").notNull(),
+    checkoutUrl: text("checkout_url"),
     providerTransactionId: text("provider_transaction_id"),
     idempotencyKey: text("idempotency_key").notNull(),
     amountMwk: integer("amount_mwk").notNull(),
