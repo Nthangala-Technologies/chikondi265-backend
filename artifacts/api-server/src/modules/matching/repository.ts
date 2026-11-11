@@ -7,6 +7,7 @@ import {
   gt,
   inArray,
   isNull,
+  ne,
   notExists,
   or,
   sql,
@@ -222,6 +223,7 @@ export async function findDiscoveryPage(
     .where(
       and(
         ...candidateEligibility(viewer),
+        ne(profilesTable.userId, viewer.userId),
         notAlreadySwiped(viewer.userId),
         notAlreadyConnected(viewer.userId),
         notBlockedEitherWay(viewer.userId),
