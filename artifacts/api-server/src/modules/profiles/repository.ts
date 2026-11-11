@@ -2,9 +2,13 @@ import { and, eq } from "drizzle-orm";
 import {
   db,
   profilesTable,
+  userPreferencesTable,
   usersTable,
 } from "@workspace/db";
-import type { ProfileInput } from "@workspace/api-zod";
+import type {
+  DiscoveryPreferencesInput,
+  ProfileInput,
+} from "@workspace/api-zod";
 
 export async function getOwnProfile(userId: string) {
   const [profile] = await db
@@ -47,4 +51,38 @@ export async function saveOwnProfile(userId: string, input: ProfileInput) {
     .returning();
 
   return profile;
+}
+
+export async function getOwnPreferences(userId: string) {
+  const [preferences] = await db
+    .select()
+    .from(userPreferencesTable)
+    .where(eq(userPreferencesTable.userId, userId))
+    .limit(1);
+
+  return preferences ?? null;
+}
+
+export async function saveOwnPreferences(
+  userId: string,
+  input: DiscoveryPreferencesInput,
+) {
+  const values = {
+    ageMin: input.ageMin,
+    ageMax: input.ageMax,
+    intentions: input.intentions.map((value) => value.trim()),
+    interests: input.interests.map((value) => value.trim()),
+    cities: input.cities.map((value) => value.trim()),
+  };
+
+  const [preferences] = await db
+    .insert(userPreferencesTable)
+    .values({ userId, ...values })
+    .onConflictDoUpdate({
+      target: userPreferencesTable.userId,
+      set: { ...values, updatedAt: new Date() },
+    })
+    .returning();
+
+  return preferences;
 }

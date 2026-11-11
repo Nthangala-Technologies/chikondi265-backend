@@ -4,6 +4,8 @@ import {
   findConnectionForUser,
   findConnectionsForUser,
   findDiscoveryPage,
+  findIncomingLikes,
+  findUserNotifications,
   getMatchingViewer,
   recordSwipe as persistSwipe,
 } from "./repository";
@@ -47,6 +49,14 @@ export async function recordUserSwipe(
 
 export async function getUserConnections(userId: string) {
   return findConnectionsForUser(userId);
+}
+
+export async function getIncomingLikes(userId: string) {
+  return findIncomingLikes(userId);
+}
+
+export async function getUserNotifications(userId: string) {
+  return findUserNotifications(userId);
 }
 
 export async function getUserConnection(userId: string, connectionId: string) {

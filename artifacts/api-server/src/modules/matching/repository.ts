@@ -16,6 +16,7 @@ import {
   blocksTable,
   connectionsTable,
   db,
+  messagesTable,
   profilesTable,
   swipesTable,
   userPreferencesTable,
@@ -48,6 +49,22 @@ export interface ConnectionView {
   matchedAt: Date;
   chatEnabledAt: Date | null;
   otherProfile: PublicProfile | null;
+}
+
+export interface IncomingLikeView {
+  action: "like" | "super";
+  createdAt: Date;
+  profile: PublicProfile;
+}
+
+export interface UserNotification {
+  id: string;
+  kind: "like" | "match" | "message";
+  title: string;
+  body: string;
+  createdAt: Date;
+  userId: string | null;
+  connectionId: string | null;
 }
 
 const profileAge = (birthDate: typeof profilesTable.birthDate) =>
@@ -239,6 +256,150 @@ export async function findDiscoveryPage(
     items: page,
     nextCursor: hasMore ? (page.at(-1)?.userId ?? null) : null,
   };
+}
+
+export async function findIncomingLikes(
+  userId: string,
+): Promise<IncomingLikeView[]> {
+  const rows = await db
+    .select({
+      action: swipesTable.action,
+      createdAt: swipesTable.createdAt,
+      userId: profilesTable.userId,
+      displayName: profilesTable.displayName,
+      age: profileAge(profilesTable.birthDate),
+      city: profilesTable.city,
+      countryCode: profilesTable.countryCode,
+      bio: profilesTable.bio,
+      interests: profilesTable.interests,
+      intention: profilesTable.intention,
+      verificationStatus: profilesTable.verificationStatus,
+    })
+    .from(swipesTable)
+    .innerJoin(usersTable, eq(usersTable.id, swipesTable.actorUserId))
+    .innerJoin(profilesTable, eq(profilesTable.userId, usersTable.id))
+    .where(
+      and(
+        eq(swipesTable.targetUserId, userId),
+        inArray(swipesTable.action, ["like", "super"]),
+        eq(usersTable.status, "active"),
+        isNull(usersTable.deletedAt),
+        eq(profilesTable.visibilityStatus, "active"),
+        gte(profileAge(profilesTable.birthDate), 18),
+        notAlreadySwiped(userId),
+        notAlreadyConnected(userId),
+        notBlockedEitherWay(userId),
+      ),
+    )
+    .orderBy(desc(swipesTable.createdAt))
+    .limit(50);
+
+  return rows.map((row) => ({
+    action: row.action as "like" | "super",
+    createdAt: row.createdAt,
+    profile: {
+      userId: row.userId,
+      displayName: row.displayName,
+      age: row.age,
+      city: row.city,
+      countryCode: row.countryCode,
+      bio: row.bio,
+      interests: row.interests,
+      intention: row.intention,
+      verificationStatus: row.verificationStatus,
+    },
+  }));
+}
+
+export async function findUserNotifications(
+  userId: string,
+): Promise<UserNotification[]> {
+  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const notifications: UserNotification[] = [];
+  const [likes, connections, unreadMessages] = await Promise.all([
+    findIncomingLikes(userId),
+    findConnectionsForUser(userId),
+    db
+      .select({
+        id: messagesTable.id,
+        connectionId: messagesTable.connectionId,
+        senderUserId: messagesTable.senderUserId,
+        displayName: profilesTable.displayName,
+        createdAt: messagesTable.createdAt,
+      })
+      .from(messagesTable)
+      .innerJoin(
+        connectionsTable,
+        eq(connectionsTable.id, messagesTable.connectionId),
+      )
+      .innerJoin(usersTable, eq(usersTable.id, messagesTable.senderUserId))
+      .innerJoin(profilesTable, eq(profilesTable.userId, messagesTable.senderUserId))
+      .where(
+        and(
+          or(
+            eq(connectionsTable.userLowId, userId),
+            eq(connectionsTable.userHighId, userId),
+          ),
+          eq(connectionsTable.status, "chat_enabled"),
+          isNull(connectionsTable.closedAt),
+          ne(messagesTable.senderUserId, userId),
+          isNull(messagesTable.readAt),
+          gte(messagesTable.createdAt, since),
+          eq(usersTable.status, "active"),
+          isNull(usersTable.deletedAt),
+          notBlockedEitherWay(userId),
+        ),
+      )
+      .orderBy(desc(messagesTable.createdAt))
+      .limit(30),
+  ]);
+
+  for (const like of likes) {
+    notifications.push({
+      id: `like:${like.profile.userId}:${like.createdAt.toISOString()}`,
+      kind: "like",
+      title: "New like",
+      body: `${like.profile.displayName} likes your profile.`,
+      createdAt: like.createdAt,
+      userId: like.profile.userId,
+      connectionId: null,
+    });
+  }
+
+  for (const connection of connections) {
+    if (
+      connection.status === "closed" ||
+      connection.matchedAt < since ||
+      !connection.otherProfile
+    ) {
+      continue;
+    }
+    notifications.push({
+      id: `match:${connection.id}`,
+      kind: "match",
+      title: "You matched",
+      body: `You and ${connection.otherProfile.displayName} liked each other.`,
+      createdAt: connection.matchedAt,
+      userId: connection.otherProfile.userId,
+      connectionId: connection.id,
+    });
+  }
+
+  for (const message of unreadMessages) {
+    notifications.push({
+      id: `message:${message.id}`,
+      kind: "message",
+      title: "New message",
+      body: `${message.displayName} sent you a message.`,
+      createdAt: message.createdAt,
+      userId: message.senderUserId,
+      connectionId: message.connectionId,
+    });
+  }
+
+  return notifications
+    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+    .slice(0, 50);
 }
 
 async function isBlocked(

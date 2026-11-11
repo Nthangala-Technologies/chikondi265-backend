@@ -2,6 +2,7 @@ import { ApiError } from "../../middleware/error-handler";
 import {
   findChatAccess,
   listConnectionMessages,
+  markIncomingMessagesRead,
   saveConnectionMessage,
   type MessageCursor,
 } from "./repository";
@@ -92,8 +93,22 @@ export async function getConnectionMessagePage(
   const cursor = cursorValue ? decodeCursor(cursorValue) : null;
   const rows = await listConnectionMessages(connectionId, cursor);
   const page = rows.slice(0, pageSize);
+  const unreadIds = page
+    .filter((message) => message.senderUserId !== userId && !message.readAt)
+    .map((message) => message.id);
+  const readAt = unreadIds.length > 0 ? new Date() : null;
+  await markIncomingMessagesRead(userId, unreadIds);
   return {
-    items: page.map(serializeMessage),
+    items: page.map((message) =>
+      serializeMessage({
+        ...message,
+        readAt:
+          message.readAt ??
+          (message.senderUserId !== userId && unreadIds.includes(message.id)
+            ? readAt
+            : null),
+      }),
+    ),
     nextCursor:
       rows.length > pageSize && page.length > 0
         ? encodeCursor(page[page.length - 1]!)

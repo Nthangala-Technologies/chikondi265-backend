@@ -256,6 +256,102 @@ export const ChangeCurrentPasswordResponse = zod.object({
 
 
 /**
+ * @summary Get discovery preferences for the authenticated user
+ */
+export const getCurrentPreferencesResponseOneAgeMinMin = 18;
+export const getCurrentPreferencesResponseOneAgeMinMax = 99;
+
+export const getCurrentPreferencesResponseOneAgeMaxMin = 18;
+export const getCurrentPreferencesResponseOneAgeMaxMax = 99;
+
+export const getCurrentPreferencesResponseOneIntentionsItemMax = 40;
+
+export const getCurrentPreferencesResponseOneIntentionsMax = 20;
+
+export const getCurrentPreferencesResponseOneInterestsItemMax = 40;
+
+export const getCurrentPreferencesResponseOneInterestsMax = 20;
+
+export const getCurrentPreferencesResponseOneCitiesItemMax = 80;
+
+export const getCurrentPreferencesResponseOneCitiesMax = 20;
+
+
+
+export const GetCurrentPreferencesResponse = zod.object({
+  "ageMin": zod.number().int().min(getCurrentPreferencesResponseOneAgeMinMin).max(getCurrentPreferencesResponseOneAgeMinMax),
+  "ageMax": zod.number().int().min(getCurrentPreferencesResponseOneAgeMaxMin).max(getCurrentPreferencesResponseOneAgeMaxMax),
+  "intentions": zod.array(zod.string().min(1).max(getCurrentPreferencesResponseOneIntentionsItemMax)).max(getCurrentPreferencesResponseOneIntentionsMax),
+  "interests": zod.array(zod.string().min(1).max(getCurrentPreferencesResponseOneInterestsItemMax)).max(getCurrentPreferencesResponseOneInterestsMax),
+  "cities": zod.array(zod.string().min(1).max(getCurrentPreferencesResponseOneCitiesItemMax)).max(getCurrentPreferencesResponseOneCitiesMax)
+}).and(zod.object({
+  "updatedAt": zod.string().datetime({"offset":true}).nullable()
+}))
+
+
+/**
+ * @summary Save discovery preferences for the authenticated user
+ */
+export const saveCurrentPreferencesBodyAgeMinMin = 18;
+export const saveCurrentPreferencesBodyAgeMinMax = 99;
+
+export const saveCurrentPreferencesBodyAgeMaxMin = 18;
+export const saveCurrentPreferencesBodyAgeMaxMax = 99;
+
+export const saveCurrentPreferencesBodyIntentionsItemMax = 40;
+
+export const saveCurrentPreferencesBodyIntentionsMax = 20;
+
+export const saveCurrentPreferencesBodyInterestsItemMax = 40;
+
+export const saveCurrentPreferencesBodyInterestsMax = 20;
+
+export const saveCurrentPreferencesBodyCitiesItemMax = 80;
+
+export const saveCurrentPreferencesBodyCitiesMax = 20;
+
+
+
+export const SaveCurrentPreferencesBody = zod.object({
+  "ageMin": zod.number().int().min(saveCurrentPreferencesBodyAgeMinMin).max(saveCurrentPreferencesBodyAgeMinMax),
+  "ageMax": zod.number().int().min(saveCurrentPreferencesBodyAgeMaxMin).max(saveCurrentPreferencesBodyAgeMaxMax),
+  "intentions": zod.array(zod.string().min(1).max(saveCurrentPreferencesBodyIntentionsItemMax)).max(saveCurrentPreferencesBodyIntentionsMax),
+  "interests": zod.array(zod.string().min(1).max(saveCurrentPreferencesBodyInterestsItemMax)).max(saveCurrentPreferencesBodyInterestsMax),
+  "cities": zod.array(zod.string().min(1).max(saveCurrentPreferencesBodyCitiesItemMax)).max(saveCurrentPreferencesBodyCitiesMax)
+})
+
+export const saveCurrentPreferencesResponseOneAgeMinMin = 18;
+export const saveCurrentPreferencesResponseOneAgeMinMax = 99;
+
+export const saveCurrentPreferencesResponseOneAgeMaxMin = 18;
+export const saveCurrentPreferencesResponseOneAgeMaxMax = 99;
+
+export const saveCurrentPreferencesResponseOneIntentionsItemMax = 40;
+
+export const saveCurrentPreferencesResponseOneIntentionsMax = 20;
+
+export const saveCurrentPreferencesResponseOneInterestsItemMax = 40;
+
+export const saveCurrentPreferencesResponseOneInterestsMax = 20;
+
+export const saveCurrentPreferencesResponseOneCitiesItemMax = 80;
+
+export const saveCurrentPreferencesResponseOneCitiesMax = 20;
+
+
+
+export const SaveCurrentPreferencesResponse = zod.object({
+  "ageMin": zod.number().int().min(saveCurrentPreferencesResponseOneAgeMinMin).max(saveCurrentPreferencesResponseOneAgeMinMax),
+  "ageMax": zod.number().int().min(saveCurrentPreferencesResponseOneAgeMaxMin).max(saveCurrentPreferencesResponseOneAgeMaxMax),
+  "intentions": zod.array(zod.string().min(1).max(saveCurrentPreferencesResponseOneIntentionsItemMax)).max(saveCurrentPreferencesResponseOneIntentionsMax),
+  "interests": zod.array(zod.string().min(1).max(saveCurrentPreferencesResponseOneInterestsItemMax)).max(saveCurrentPreferencesResponseOneInterestsMax),
+  "cities": zod.array(zod.string().min(1).max(saveCurrentPreferencesResponseOneCitiesItemMax)).max(saveCurrentPreferencesResponseOneCitiesMax)
+}).and(zod.object({
+  "updatedAt": zod.string().datetime({"offset":true}).nullable()
+}))
+
+
+/**
  * @summary List eligible profiles for the authenticated user
  */
 export const getDiscoveryQueryLimitDefault = 20;
@@ -301,6 +397,93 @@ export const RecordSwipeResponse = zod.object({
   "action": zod.enum(['like', 'pass', 'super']),
   "matched": zod.boolean(),
   "connectionId": zod.string().uuid().nullable()
+})
+
+
+/**
+ * @summary List eligible positive swipes received by the authenticated user
+ */
+export const getIncomingLikesResponseItemsItemProfileAgeMin = 18;
+
+
+
+export const GetIncomingLikesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "action": zod.enum(['like', 'super']),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "profile": zod.object({
+  "userId": zod.string().uuid(),
+  "displayName": zod.string(),
+  "age": zod.number().int().min(getIncomingLikesResponseItemsItemProfileAgeMin),
+  "city": zod.string(),
+  "countryCode": zod.string(),
+  "bio": zod.string(),
+  "interests": zod.array(zod.string()),
+  "intention": zod.string(),
+  "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected'])
+})
+}))
+})
+
+
+/**
+ * @summary Get recent likes, matches, and unread messages
+ */
+export const GetNotificationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['like', 'match', 'message']),
+  "title": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "userId": zod.string().uuid().nullable(),
+  "connectionId": zod.string().uuid().nullable()
+}))
+})
+
+
+/**
+ * @summary Block another user and hide both profiles from each other
+ */
+export const CreateBlockBody = zod.object({
+  "blockedUserId": zod.string().uuid()
+})
+
+export const CreateBlockResponse = zod.object({
+  "blocked": zod.literal(true)
+})
+
+
+/**
+ * @summary Remove a block created by the authenticated user
+ */
+export const RemoveBlockParams = zod.object({
+  "userId": zod.coerce.string().uuid()
+})
+
+export const RemoveBlockResponse = zod.object({
+  "unblocked": zod.literal(true)
+})
+
+
+/**
+ * @summary Submit a report about another user
+ */
+export const createSafetyReportBodyDetailsMax = 1000;
+
+
+
+export const CreateSafetyReportBody = zod.object({
+  "reportedUserId": zod.string().uuid(),
+  "connectionId": zod.string().uuid().optional(),
+  "category": zod.enum(['harassment', 'scam', 'impersonation', 'underage', 'other']),
+  "details": zod.string().max(createSafetyReportBodyDetailsMax).optional()
+})
+
+export const CreateSafetyReportResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['open']),
+  "createdAt": zod.string().datetime({"offset":true})
 })
 
 

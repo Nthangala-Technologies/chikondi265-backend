@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
 import {
   blocksTable,
   connectionsTable,
@@ -80,6 +80,23 @@ export async function listConnectionMessages(
     )
     .orderBy(desc(messagesTable.createdAt), desc(messagesTable.id))
     .limit(31);
+}
+
+export async function markIncomingMessagesRead(
+  userId: string,
+  messageIds: string[],
+): Promise<void> {
+  if (messageIds.length === 0) return;
+  await db
+    .update(messagesTable)
+    .set({ readAt: new Date() })
+    .where(
+      and(
+        inArray(messagesTable.id, messageIds),
+        ne(messagesTable.senderUserId, userId),
+        isNull(messagesTable.readAt),
+      ),
+    );
 }
 
 export async function saveConnectionMessage(input: {
