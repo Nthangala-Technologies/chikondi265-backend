@@ -1,9 +1,13 @@
+import { createServer } from "node:http";
 import { pool } from "@workspace/db";
 import app from "./app";
 import { runtimeConfig } from "./lib/config";
 import { logger } from "./lib/logger";
+import { attachChatWebSocket } from "./modules/chat/realtime";
 
-const server = app.listen(runtimeConfig.port, "0.0.0.0", () => {
+const server = createServer(app);
+attachChatWebSocket(server);
+server.listen(runtimeConfig.port, "0.0.0.0", () => {
   logger.info({ port: runtimeConfig.port }, "Server listening");
 });
 

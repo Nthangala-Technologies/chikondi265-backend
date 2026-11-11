@@ -361,3 +361,77 @@ export const GetConnectionResponse = zod.object({
 })
 
 
+/**
+ * @summary List paginated messages for an unlocked connection
+ */
+export const GetConnectionMessagesParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetConnectionMessagesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "connectionId": zod.string().uuid(),
+  "senderUserId": zod.string().uuid(),
+  "clientMessageId": zod.string().uuid(),
+  "body": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "readAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "nextCursor": zod.string().nullable()
+})
+
+
+/**
+ * @summary Send a deduplicated message in an unlocked connection
+ */
+export const CreateConnectionMessageParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createConnectionMessageBodyBodyMax = 2000;
+
+
+
+export const CreateConnectionMessageBody = zod.object({
+  "body": zod.string().min(1).max(createConnectionMessageBodyBodyMax),
+  "clientMessageId": zod.string().uuid()
+})
+
+export const CreateConnectionMessageResponse = zod.object({
+  "id": zod.string().uuid(),
+  "connectionId": zod.string().uuid(),
+  "senderUserId": zod.string().uuid(),
+  "clientMessageId": zod.string().uuid(),
+  "body": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "readAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Get the next older page of connection messages
+ */
+export const getConnectionMessagesAfterCursorPathCursorMax = 512;
+
+
+
+export const GetConnectionMessagesAfterCursorParams = zod.object({
+  "id": zod.coerce.string().uuid(),
+  "cursor": zod.coerce.string().max(getConnectionMessagesAfterCursorPathCursorMax)
+})
+
+export const GetConnectionMessagesAfterCursorResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "connectionId": zod.string().uuid(),
+  "senderUserId": zod.string().uuid(),
+  "clientMessageId": zod.string().uuid(),
+  "body": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "readAt": zod.string().datetime({"offset":true}).nullable()
+})),
+  "nextCursor": zod.string().nullable()
+})
+
+
