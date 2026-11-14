@@ -5,15 +5,19 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { ProfileInput } from './profileInput';
+import type { RegisterProfileInput } from './registerProfileInput';
 
 export interface RegisterAccountInput {
-  /** @maxLength 320 */
-  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 320
+     */
+  identifier: string;
   /**
      * @minLength 12
      * @maxLength 128
+     * @pattern ^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,128}$
      */
   password: string;
-  profile: ProfileInput;
+  profile: RegisterProfileInput;
 }

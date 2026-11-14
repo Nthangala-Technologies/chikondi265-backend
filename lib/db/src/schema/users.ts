@@ -18,6 +18,7 @@ export const usersTable = pgTable(
     authProvider: text("auth_provider").notNull(),
     authSubject: text("auth_subject").notNull(),
     email: varchar("email", { length: 320 }),
+    phone: varchar("phone", { length: 16 }),
     passwordHash: text("password_hash"),
     status: text("status").notNull().default("active"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -35,9 +36,10 @@ export const usersTable = pgTable(
       table.authSubject,
     ),
     unique("users_email_unique").on(table.email),
+    unique("users_phone_unique").on(table.phone),
     check(
       "users_password_auth_fields_check",
-      sql`${table.authProvider} <> 'password' OR (${table.email} IS NOT NULL AND ${table.passwordHash} IS NOT NULL)`,
+      sql`${table.authProvider} <> 'password' OR ((${table.email} IS NOT NULL OR ${table.phone} IS NOT NULL) AND ${table.passwordHash} IS NOT NULL)`,
     ),
     check(
       "users_status_check",

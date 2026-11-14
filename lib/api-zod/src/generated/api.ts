@@ -20,39 +20,46 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary Register a new account and create a session
  */
-export const registerAccountBodyEmailMax = 320;
+export const registerAccountBodyIdentifierMax = 320;
 
 export const registerAccountBodyPasswordMin = 12;
 export const registerAccountBodyPasswordMax = 128;
 
-export const registerAccountBodyProfileDisplayNameMax = 50;
 
+export const registerAccountBodyPasswordRegExp = new RegExp('^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,128}$');
+export const registerAccountBodyProfileFirstNameMax = 50;
+
+
+export const registerAccountBodyProfileFirstNameRegExp = new RegExp('^[^0-9]+$');
+export const registerAccountBodyProfileLastNameMax = 50;
+
+
+export const registerAccountBodyProfileLastNameRegExp = new RegExp('^[^0-9]+$');
 export const registerAccountBodyProfileCityMax = 80;
 
-export const registerAccountBodyProfileCountryCodeDefault = `MW`;
-export const registerAccountBodyProfileCountryCodeRegExp = new RegExp('^[A-Z]{2}$');
+export const registerAccountBodyProfileCountryCodeMin = 2;
+export const registerAccountBodyProfileCountryCodeMax = 2;
+
 export const registerAccountBodyProfileBioMax = 500;
 
 export const registerAccountBodyProfileInterestsItemMax = 40;
-
-export const registerAccountBodyProfileInterestsMax = 20;
 
 export const registerAccountBodyProfileIntentionMax = 40;
 
 
 
 export const RegisterAccountBody = zod.object({
-  "email": zod.string().email().max(registerAccountBodyEmailMax),
-  "password": zod.string().min(registerAccountBodyPasswordMin).max(registerAccountBodyPasswordMax),
+  "identifier": zod.string().min(1).max(registerAccountBodyIdentifierMax),
+  "password": zod.string().min(registerAccountBodyPasswordMin).max(registerAccountBodyPasswordMax).regex(registerAccountBodyPasswordRegExp),
   "profile": zod.object({
-  "displayName": zod.string().min(1).max(registerAccountBodyProfileDisplayNameMax),
+  "firstName": zod.string().min(1).max(registerAccountBodyProfileFirstNameMax).regex(registerAccountBodyProfileFirstNameRegExp),
+  "lastName": zod.string().min(1).max(registerAccountBodyProfileLastNameMax).regex(registerAccountBodyProfileLastNameRegExp),
   "birthDate": zod.string().date(),
   "city": zod.string().min(1).max(registerAccountBodyProfileCityMax),
-  "countryCode": zod.string().regex(registerAccountBodyProfileCountryCodeRegExp).default(registerAccountBodyProfileCountryCodeDefault),
+  "countryCode": zod.string().min(registerAccountBodyProfileCountryCodeMin).max(registerAccountBodyProfileCountryCodeMax).optional(),
   "bio": zod.string().max(registerAccountBodyProfileBioMax).optional(),
-  "interests": zod.array(zod.string().min(1).max(registerAccountBodyProfileInterestsItemMax)).max(registerAccountBodyProfileInterestsMax).optional(),
-  "intention": zod.string().min(1).max(registerAccountBodyProfileIntentionMax),
-  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']).optional()
+  "interests": zod.array(zod.string().max(registerAccountBodyProfileInterestsItemMax)).optional(),
+  "intention": zod.string().min(1).max(registerAccountBodyProfileIntentionMax)
 })
 })
 
@@ -60,7 +67,7 @@ export const RegisterAccountResponse = zod.object({
   "token": zod.string(),
   "expiresAt": zod.string().datetime({"offset":true}),
   "userId": zod.string().uuid(),
-  "email": zod.string().email(),
+  "email": zod.string().email().nullable(),
   "profile": zod.union([zod.object({
   "userId": zod.string().uuid(),
   "displayName": zod.string(),
@@ -73,6 +80,7 @@ export const RegisterAccountResponse = zod.object({
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
 }),zod.null()])
@@ -82,7 +90,7 @@ export const RegisterAccountResponse = zod.object({
 /**
  * @summary Sign in and create a revocable session
  */
-export const loginAccountBodyEmailMax = 320;
+export const loginAccountBodyIdentifierMax = 320;
 
 export const loginAccountBodyPasswordMin = 12;
 export const loginAccountBodyPasswordMax = 128;
@@ -90,7 +98,7 @@ export const loginAccountBodyPasswordMax = 128;
 
 
 export const LoginAccountBody = zod.object({
-  "email": zod.string().email().max(loginAccountBodyEmailMax),
+  "identifier": zod.string().min(1).max(loginAccountBodyIdentifierMax),
   "password": zod.string().min(loginAccountBodyPasswordMin).max(loginAccountBodyPasswordMax)
 })
 
@@ -98,7 +106,7 @@ export const LoginAccountResponse = zod.object({
   "token": zod.string(),
   "expiresAt": zod.string().datetime({"offset":true}),
   "userId": zod.string().uuid(),
-  "email": zod.string().email(),
+  "email": zod.string().email().nullable(),
   "profile": zod.union([zod.object({
   "userId": zod.string().uuid(),
   "displayName": zod.string(),
@@ -111,6 +119,7 @@ export const LoginAccountResponse = zod.object({
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
 }),zod.null()])
@@ -141,6 +150,7 @@ export const GetCurrentUserResponse = zod.object({
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
 }),zod.null()])
@@ -197,8 +207,18 @@ export const SaveCurrentUserProfileResponse = zod.object({
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
+})
+
+
+/**
+ * @summary Upload the authenticated user's profile photo
+ */
+export const UploadCurrentUserPhotoResponse = zod.object({
+  "photoUrl": zod.string(),
+  "moderationStatus": zod.enum(['pending'])
 })
 
 
@@ -217,6 +237,7 @@ export const DeactivateCurrentAccountResponse = zod.object({
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
 })
@@ -237,6 +258,7 @@ export const ActivateCurrentAccountResponse = zod.object({
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish(),
   "createdAt": zod.string().datetime({"offset":true}),
   "updatedAt": zod.string().datetime({"offset":true})
 })
@@ -387,7 +409,8 @@ export const GetDiscoveryResponse = zod.object({
   "interests": zod.array(zod.string()),
   "intention": zod.string(),
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
-  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03'])
+  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish()
 })),
   "nextCursor": zod.string().uuid().nullable()
 })
@@ -430,7 +453,8 @@ export const GetIncomingLikesResponse = zod.object({
   "interests": zod.array(zod.string()),
   "intention": zod.string(),
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
-  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03'])
+  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish()
 })
 }))
 })
@@ -519,7 +543,8 @@ export const GetConnectionsResponseItem = zod.object({
   "interests": zod.array(zod.string()),
   "intention": zod.string(),
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
-  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03'])
+  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish()
 }),zod.null()])
 })
 export const GetConnectionsResponse = zod.array(GetConnectionsResponseItem)
@@ -551,7 +576,8 @@ export const GetConnectionResponse = zod.object({
   "interests": zod.array(zod.string()),
   "intention": zod.string(),
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
-  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03'])
+  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullish()
 }),zod.null()])
 })
 

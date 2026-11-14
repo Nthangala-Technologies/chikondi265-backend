@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, gt, isNull } from "drizzle-orm";
-import type { ProfileInput } from "@workspace/api-zod";
+import type { RegisterProfileInput } from "@workspace/api-zod";
 import {
   authSessionsTable,
   db,
@@ -8,6 +8,7 @@ import {
   usersTable,
 } from "@workspace/db";
 import { ApiError } from "../../middleware/error-handler";
+import { assertValidRegistrationPassword } from "./registration-validation";
 import { isAtLeast18 } from "../profiles/age-policy";
 import {
   createSessionToken,
@@ -19,19 +20,74 @@ import {
 } from "./security";
 
 export type RegisterAccountInput = {
-  email: string;
+  identifier: string;
   password: string;
-  profile: ProfileInput;
+  profile: RegisterProfileInput;
 };
 
 export type LoginAccountInput = {
-  email: string;
+  identifier: string;
   password: string;
 };
 
-function normalizeProfile(profile: ProfileInput) {
+function normalizeIdentifier(value: string): { email: string | null; phone: string | null } {
+  const identifier = value.trim();
+  if (identifier.includes("@")) {
+    const email = normalizeEmail(identifier);
+    if (
+      email.length <= 320 &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      return { email, phone: null };
+    }
+  } else {
+    const compactPhone = identifier.replace(/[\s()-]/g, "");
+    const phone = compactPhone.startsWith("+265")
+      ? compactPhone
+      : compactPhone.startsWith("265")
+        ? `+${compactPhone}`
+        : compactPhone.startsWith("0")
+          ? `+265${compactPhone.slice(1)}`
+          : "";
+    if (/^\+265\d{9}$/.test(phone)) {
+      return { email: null, phone };
+    }
+  }
+
+  throw new ApiError(
+    400,
+    "BAD_REQUEST",
+    "Enter a valid email address or Malawi phone number.",
+    { identifier: ["Enter a valid email address or Malawi phone number."] },
+  );
+}
+
+function normalizeProfile(profile: RegisterProfileInput) {
+  const firstName = profile.firstName.trim();
+  const lastName = profile.lastName.trim();
+  const fieldErrors: Record<string, string[]> = {};
+  for (const [field, value] of [
+    ["firstName", firstName],
+    ["lastName", lastName],
+  ] as const) {
+    if (!value) fieldErrors[field] = [`${field === "firstName" ? "Name" : "Surname"} is required.`];
+    else if (value.length > 50) {
+      fieldErrors[field] = [`${field === "firstName" ? "Name" : "Surname"} must be 50 characters or fewer.`];
+    } else if (/\d/.test(value)) {
+      fieldErrors[field] = [`${field === "firstName" ? "Name" : "Surname"} cannot include numbers.`];
+    }
+  }
+  if (Object.keys(fieldErrors).length > 0) {
+    throw new ApiError(
+      400,
+      "BAD_REQUEST",
+      "Enter a valid name and surname.",
+      fieldErrors,
+    );
+  }
+
   return {
-    displayName: profile.displayName.trim(),
+    displayName: `${firstName} ${lastName}`,
     birthDate: profile.birthDate,
     city: profile.city.trim(),
     countryCode: profile.countryCode?.trim() ?? "MW",
@@ -64,6 +120,29 @@ function isEmailUniqueViolation(error: unknown): boolean {
   return false;
 }
 
+function isPhoneUniqueViolation(error: unknown): boolean {
+  const visited = new Set<object>();
+  let candidate: unknown = error;
+
+  while (candidate && typeof candidate === "object" && !visited.has(candidate)) {
+    visited.add(candidate);
+    const databaseError = candidate as {
+      code?: unknown;
+      constraint?: unknown;
+      cause?: unknown;
+    };
+    if (
+      databaseError.code === "23505" &&
+      databaseError.constraint === "users_phone_unique"
+    ) {
+      return true;
+    }
+    candidate = databaseError.cause;
+  }
+
+  return false;
+}
+
 async function saveSession(userId: string) {
   const token = createSessionToken();
   const tokenHash = hashSessionToken(token);
@@ -79,7 +158,9 @@ async function saveSession(userId: string) {
 }
 
 export async function registerAccount(input: RegisterAccountInput) {
-  const email = normalizeEmail(input.email);
+  assertValidRegistrationPassword(input.password);
+
+  const { email, phone } = normalizeIdentifier(input.identifier);
   const passwordHash = await hashPassword(input.password);
   const profile = normalizeProfile(input.profile);
 
@@ -99,6 +180,7 @@ export async function registerAccount(input: RegisterAccountInput) {
           authProvider: "password",
           authSubject: randomUUID(),
           email,
+          phone,
           passwordHash,
         })
         .returning({
@@ -135,7 +217,16 @@ export async function registerAccount(input: RegisterAccountInput) {
       throw new ApiError(
         409,
         "CONFLICT",
-        "An account with this email already exists.",
+        "An account with this email address already exists.",
+        { identifier: ["An account with this email address already exists."] },
+      );
+    }
+    if (isPhoneUniqueViolation(error)) {
+      throw new ApiError(
+        409,
+        "CONFLICT",
+        "An account with this phone number already exists.",
+        { identifier: ["An account with this phone number already exists."] },
       );
     }
     throw error;
@@ -143,8 +234,8 @@ export async function registerAccount(input: RegisterAccountInput) {
 }
 
 export async function loginAccount(input: LoginAccountInput) {
-  const email = normalizeEmail(input.email);
-  const [account] = await db
+  const identifier = normalizeIdentifier(input.identifier);
+  const query = db
     .select({
       id: usersTable.id,
       email: usersTable.email,
@@ -152,9 +243,11 @@ export async function loginAccount(input: LoginAccountInput) {
       status: usersTable.status,
       deletedAt: usersTable.deletedAt,
     })
-    .from(usersTable)
-    .where(eq(usersTable.email, email))
-    .limit(1);
+    .from(usersTable);
+  const accounts = identifier.email
+    ? await query.where(eq(usersTable.email, identifier.email)).limit(1)
+    : await query.where(eq(usersTable.phone, identifier.phone!)).limit(1);
+  const [account] = accounts;
 
   const passwordMatches = await verifyPassword(
     input.password,
@@ -162,7 +255,11 @@ export async function loginAccount(input: LoginAccountInput) {
   );
 
   if (!account || !account.passwordHash || !passwordMatches) {
-    throw new ApiError(401, "UNAUTHENTICATED", "Email or password is incorrect.");
+    throw new ApiError(
+      401,
+      "UNAUTHENTICATED",
+      "Email or phone number and password do not match.",
+    );
   }
 
   if (account.status !== "active" || account.deletedAt) {

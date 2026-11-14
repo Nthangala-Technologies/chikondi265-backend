@@ -32,6 +32,7 @@ import {
 import {
   avatarIdFromObjectKey,
   defaultAvatarForUser,
+  profilePhotoUrlFromObjectKey,
   type GeneratedProfileAvatarId,
 } from "../profiles/avatars";
 
@@ -568,7 +569,9 @@ async function getPublicProfiles(
 
 async function attachPhotoIds<T extends { userId: string }>(
   profiles: T[],
-): Promise<Array<T & { photoId: GeneratedProfileAvatarId }>> {
+): Promise<
+  Array<T & { photoId: GeneratedProfileAvatarId; photoUrl: string | null }>
+> {
   if (profiles.length === 0) return [];
 
   const userIds = [...new Set(profiles.map((profile) => profile.userId))];
@@ -587,12 +590,16 @@ async function attachPhotoIds<T extends { userId: string }>(
     );
   const photoKeys = new Map(photos.map((photo) => [photo.userId, photo.objectKey]));
 
-  return profiles.map((profile) => ({
-    ...profile,
-    photoId:
-      avatarIdFromObjectKey(photoKeys.get(profile.userId)) ??
-      defaultAvatarForUser(profile.userId),
-  }));
+  return profiles.map((profile) => {
+    const objectKey = photoKeys.get(profile.userId);
+    return {
+      ...profile,
+      photoId:
+        avatarIdFromObjectKey(objectKey) ??
+        defaultAvatarForUser(profile.userId),
+      photoUrl: profilePhotoUrlFromObjectKey(objectKey),
+    };
+  });
 }
 
 function otherParticipantId(userId: string) {

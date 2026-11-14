@@ -11,6 +11,7 @@ export interface AuthSessionResponse {
   token: string;
   expiresAt: string;
   userId: string;
-  email: string;
+  /** @nullable */
+  email: string | null;
   profile: Profile | null;
 }

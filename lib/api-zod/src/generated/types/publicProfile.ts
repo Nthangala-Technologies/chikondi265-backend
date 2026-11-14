@@ -20,4 +20,6 @@ export interface PublicProfile {
   intention: string;
   verificationStatus: PublicProfileVerificationStatus;
   photoId: PublicProfilePhotoId;
+  /** @nullable */
+  photoUrl?: string | null;
 }

@@ -4,6 +4,7 @@ import type {
 } from "@workspace/api-zod";
 import { ApiError } from "../../middleware/error-handler";
 import {
+  saveOwnProfilePhotoObjectKey,
   getOwnAccountEmail,
   getOwnPreferences,
   getOwnProfile,
@@ -12,6 +13,11 @@ import {
 } from "./repository";
 import { isAtLeast18 } from "./age-policy";
 import { publishUserDataUpdates } from "../realtime/service";
+import {
+  removeStoredProfilePhoto,
+  storeProfilePhotoFile,
+} from "./photo-upload";
+import { profilePhotoUrlFromObjectKey } from "./avatars";
 
 export { isAtLeast18 } from "./age-policy";
 
@@ -72,6 +78,26 @@ export async function saveCurrentUserProfile(
   const saved = await saveOwnProfile(userId, normalized);
   await publishUserDataUpdates([userId]);
   return saved;
+}
+
+export async function uploadCurrentUserProfilePhoto(
+  userId: string,
+  data: Buffer,
+  mimeType: string,
+) {
+  const storedPhoto = await storeProfilePhotoFile(userId, data, mimeType);
+  try {
+    await saveOwnProfilePhotoObjectKey(userId, storedPhoto.objectKey);
+  } catch (error) {
+    await removeStoredProfilePhoto(storedPhoto.filePath);
+    throw error;
+  }
+
+  await publishUserDataUpdates([userId]);
+  return {
+    photoUrl: profilePhotoUrlFromObjectKey(storedPhoto.objectKey)!,
+    moderationStatus: "pending" as const,
+  };
 }
 
 export async function getCurrentPreferences(userId: string) {

@@ -31,10 +31,68 @@ const authRateLimit = rateLimit({
   },
 });
 
+function collectFieldErrors(
+  issues: readonly { path: readonly (string | number)[]; message: string }[],
+) {
+  const fieldErrors: Record<string, string[]> = {};
+  for (const issue of issues) {
+    const field = issue.path.length
+      ? issue.path.map(String).join(".")
+      : "_form";
+    (fieldErrors[field] ??= []).push(issue.message);
+  }
+  return fieldErrors;
+}
+
+function normalizeLegacyAuthBody(body: unknown, registering: boolean): unknown {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return body;
+  const normalized = { ...(body as Record<string, unknown>) };
+  if (
+    typeof normalized.identifier !== "string" &&
+    typeof normalized.email === "string"
+  ) {
+    normalized.identifier = normalized.email;
+  }
+  delete normalized.email;
+
+  if (
+    registering &&
+    normalized.profile &&
+    typeof normalized.profile === "object" &&
+    !Array.isArray(normalized.profile)
+  ) {
+    const profile = {
+      ...(normalized.profile as Record<string, unknown>),
+    };
+    if (
+      typeof profile.displayName === "string" &&
+      typeof profile.firstName !== "string" &&
+      typeof profile.lastName !== "string"
+    ) {
+      const [firstName = "", ...remaining] = profile.displayName.trim().split(/\s+/);
+      profile.firstName = firstName;
+      profile.lastName = remaining.join(" ");
+    }
+    delete profile.displayName;
+    normalized.profile = profile;
+  }
+
+  return normalized;
+}
+
 router.post("/auth/register", authRateLimit, async (req, res, next) => {
-  const parsed = RegisterAccountBody.safeParse(req.body);
+  const parsed = RegisterAccountBody.safeParse(
+    normalizeLegacyAuthBody(req.body, true),
+  );
   if (!parsed.success) {
-    next(new ApiError(400, "BAD_REQUEST", "Registration details are invalid."));
+    next(
+      new ApiError(
+        400,
+        "BAD_REQUEST",
+        "Registration details are invalid.",
+        collectFieldErrors(parsed.error.issues),
+      ),
+    );
     return;
   }
 
@@ -46,7 +104,9 @@ router.post("/auth/register", authRateLimit, async (req, res, next) => {
 });
 
 router.post("/auth/login", authRateLimit, async (req, res, next) => {
-  const parsed = LoginAccountBody.safeParse(req.body);
+  const parsed = LoginAccountBody.safeParse(
+    normalizeLegacyAuthBody(req.body, false),
+  );
   if (!parsed.success) {
     next(new ApiError(400, "BAD_REQUEST", "Email or password is invalid."));
     return;

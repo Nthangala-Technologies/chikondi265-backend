@@ -14,6 +14,7 @@ import {
   avatarIdFromObjectKey,
   avatarObjectKey,
   defaultAvatarForUser,
+  profilePhotoUrlFromObjectKey,
   type GeneratedProfileAvatarId,
 } from "./avatars";
 
@@ -25,7 +26,11 @@ export async function getOwnProfile(userId: string) {
     .limit(1);
 
   return profile
-    ? { ...profile, photoId: await getOwnProfilePhotoId(userId) }
+    ? {
+        ...profile,
+        photoId: await getOwnProfilePhotoId(userId),
+        photoUrl: await getOwnProfilePhotoUrl(userId),
+      }
     : null;
 }
 
@@ -45,6 +50,26 @@ export async function getOwnProfilePhotoId(userId: string) {
   return avatarIdFromObjectKey(photo?.objectKey) ?? defaultAvatarForUser(userId);
 }
 
+export async function getOwnProfilePhotoObjectKey(userId: string) {
+  const [photo] = await db
+    .select({ objectKey: profilePhotosTable.objectKey })
+    .from(profilePhotosTable)
+    .where(
+      and(
+        eq(profilePhotosTable.userId, userId),
+        eq(profilePhotosTable.position, 0),
+      ),
+    )
+    .limit(1);
+  return photo?.objectKey ?? null;
+}
+
+export async function getOwnProfilePhotoUrl(userId: string) {
+  return profilePhotoUrlFromObjectKey(
+    await getOwnProfilePhotoObjectKey(userId),
+  );
+}
+
 export async function saveOwnProfilePhotoId(
   userId: string,
   avatarId: GeneratedProfileAvatarId,
@@ -62,6 +87,28 @@ export async function saveOwnProfilePhotoId(
       set: {
         objectKey: avatarObjectKey(userId, avatarId),
         moderationStatus: "approved",
+        createdAt: new Date(),
+      },
+    });
+}
+
+export async function saveOwnProfilePhotoObjectKey(
+  userId: string,
+  objectKey: string,
+) {
+  await db
+    .insert(profilePhotosTable)
+    .values({
+      userId,
+      objectKey,
+      position: 0,
+      moderationStatus: "pending",
+    })
+    .onConflictDoUpdate({
+      target: [profilePhotosTable.userId, profilePhotosTable.position],
+      set: {
+        objectKey,
+        moderationStatus: "pending",
         createdAt: new Date(),
       },
     });
@@ -101,7 +148,11 @@ export async function saveOwnProfile(userId: string, input: ProfileInput) {
     await saveOwnProfilePhotoId(userId, input.photoId);
   }
 
-  return { ...profile, photoId: await getOwnProfilePhotoId(userId) };
+  return {
+    ...profile,
+    photoId: await getOwnProfilePhotoId(userId),
+    photoUrl: await getOwnProfilePhotoUrl(userId),
+  };
 }
 
 export async function getOwnPreferences(userId: string) {

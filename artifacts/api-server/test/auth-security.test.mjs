@@ -8,7 +8,19 @@ import {
   sessionExpiry,
   verifyPassword,
 } from "../src/modules/auth/security.ts";
+import { ApiError } from "../src/middleware/error-handler.ts";
+import { assertValidRegistrationPassword } from "../src/modules/auth/registration-validation.ts";
 import { isAtLeast18 } from "../src/modules/profiles/age-policy.ts";
+
+test("weak registration passwords fail with HTTP 400 and password field errors", () => {
+  assert.throws(
+    () => assertValidRegistrationPassword("weak-password"),
+    (error) =>
+      error instanceof ApiError &&
+      error.statusCode === 400 &&
+      Boolean(error.fieldErrors?.password?.length),
+  );
+});
 
 test("normalizes email before account lookup and uniqueness checks", () => {
   assert.equal(normalizeEmail("  PERSON@Example.COM "), "person@example.com");

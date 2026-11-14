@@ -7,6 +7,7 @@ import { payChanguWebhookRouter } from "./routes/v1/payments";
 import { isAllowedCorsOrigin } from "./lib/config";
 import { logger } from "./lib/logger";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
+import { profilePhotoUploadDirectory } from "./modules/profiles/photo-upload";
 
 const app: Express = express();
 
@@ -63,6 +64,17 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true, limit: "64kb" }));
 
+app.use(
+  "/uploads",
+  express.static(profilePhotoUploadDirectory(), {
+    dotfiles: "deny",
+    index: false,
+    maxAge: "1h",
+    setHeaders(res) {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+    },
+  }),
+);
 app.use("/api", router);
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -25,6 +25,13 @@ export function avatarIdFromObjectKey(
   return generatedProfileAvatarIds.find((candidate) => candidate === avatarId) ?? null;
 }
 
+export function profilePhotoUrlFromObjectKey(
+  objectKey: string | null | undefined,
+): string | null {
+  if (!objectKey?.startsWith("profile-photos/")) return null;
+  return `/uploads/${objectKey}`;
+}
+
 export function avatarObjectKey(
   userId: string,
   avatarId: GeneratedProfileAvatarId,

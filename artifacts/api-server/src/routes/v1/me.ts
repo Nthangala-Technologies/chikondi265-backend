@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import {
   ChangeCurrentPasswordBody,
   SaveCurrentUserProfileBody,
@@ -13,12 +13,55 @@ import {
 import {
   getCurrentUserProfile,
   saveCurrentUserProfile,
+  uploadCurrentUserProfilePhoto,
 } from "../../modules/profiles/service";
 import { getCurrentUserPaymentHistory } from "../../modules/payments/service";
 
 const router = Router();
 
 router.use(requireUser);
+
+router.post(
+  "/me/photo",
+  express.raw({
+    type: ["image/jpeg", "image/png", "image/webp"],
+    limit: "5mb",
+  }),
+  async (req, res, next) => {
+    try {
+      const mimeType = req.headers["content-type"]
+        ?.split(";")[0]
+        ?.trim()
+        .toLowerCase();
+      if (
+        mimeType !== "image/jpeg" &&
+        mimeType !== "image/png" &&
+        mimeType !== "image/webp"
+      ) {
+        throw new ApiError(
+          415,
+          "BAD_REQUEST",
+          "Choose a JPEG, PNG, or WebP image.",
+          { photo: ["Only JPEG, PNG, and WebP images are supported."] },
+        );
+      }
+      if (!Buffer.isBuffer(req.body)) {
+        throw new ApiError(400, "BAD_REQUEST", "No image was uploaded.", {
+          photo: ["Choose an image to upload."],
+        });
+      }
+
+      const uploaded = await uploadCurrentUserProfilePhoto(
+        res.locals.userId as string,
+        req.body,
+        mimeType,
+      );
+      res.status(200).json(uploaded);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 function collectFieldErrors(
   issues: readonly { path: readonly (string | number)[]; message: string }[],

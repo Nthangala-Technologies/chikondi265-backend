@@ -48,6 +48,23 @@ export const errorHandler: ErrorRequestHandler = (
     return;
   }
 
+  if (
+    error &&
+    typeof error === "object" &&
+    "status" in error &&
+    error.status === 413
+  ) {
+    res.status(413).json({
+      error: {
+        code: "BAD_REQUEST",
+        message: "The image must be 5 MB or smaller.",
+        requestId: String(req.id),
+        fieldErrors: { photo: ["The image must be 5 MB or smaller."] },
+      },
+    });
+    return;
+  }
+
   req.log.error({ err: error }, "Unhandled API error");
   res.status(500).json({
     error: {

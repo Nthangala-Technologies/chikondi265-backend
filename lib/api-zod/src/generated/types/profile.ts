@@ -19,6 +19,8 @@ export interface Profile {
   visibilityStatus: string;
   verificationStatus: string;
   photoId: ProfilePhotoId;
+  /** @nullable */
+  photoUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
