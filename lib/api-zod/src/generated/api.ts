@@ -22,11 +22,11 @@ export const HealthCheckResponse = zod.object({
  */
 export const registerAccountBodyIdentifierMax = 320;
 
-export const registerAccountBodyPasswordMin = 12;
+export const registerAccountBodyPasswordMin = 8;
 export const registerAccountBodyPasswordMax = 128;
 
 
-export const registerAccountBodyPasswordRegExp = new RegExp('^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,128}$');
+export const registerAccountBodyPasswordRegExp = new RegExp('^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,128}$');
 export const registerAccountBodyProfileFirstNameMax = 50;
 
 

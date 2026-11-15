@@ -14,9 +14,9 @@ export interface RegisterAccountInput {
      */
   identifier: string;
   /**
-     * @minLength 12
+     * @minLength 8
      * @maxLength 128
-     * @pattern ^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,128}$
+     * @pattern ^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,128}$
      */
   password: string;
   profile: RegisterProfileInput;

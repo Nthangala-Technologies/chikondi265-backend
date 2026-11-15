@@ -198,7 +198,17 @@ function stopForResponse(response, body) {
     body && typeof body === "object" && body.error && typeof body.error.code === "string"
       ? body.error.code
       : "UNKNOWN";
-  console.error(`Stopped: HTTP ${response.status}; error code ${code}.`);
+  const errorMessage =
+    body && typeof body === "object" && body.error && typeof body.error.message === "string"
+      ? body.error.message
+      : "No error message returned.";
+  const fieldErrors =
+    body && typeof body === "object" && body.error && body.error.fieldErrors
+      ? JSON.stringify(body.error.fieldErrors)
+      : "{}";
+  console.error(
+    `Stopped: HTTP ${response.status}; error code ${code}; message ${errorMessage}; field errors ${fieldErrors}.`,
+  );
   process.exit(1);
 }
 
@@ -208,10 +218,20 @@ async function main() {
   for (const person of selectedProfiles) {
     const email = `qa-${person.firstName.toLowerCase()}@chikondi.test`;
     const profile = profileFor(person);
+    const registrationProfile = { ...profile };
+    delete registrationProfile.displayName;
     const registerResponse = await request("/api/v1/auth/register", {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ email, password, profile }),
+      body: JSON.stringify({
+        identifier: email,
+        password,
+        profile: {
+          ...registrationProfile,
+          firstName: person.firstName,
+          lastName: person.surname,
+        },
+      }),
     });
     let token;
     let action;
@@ -222,27 +242,16 @@ async function main() {
       action = "created";
     } else if (registerResponse.status === 409) {
       await registerResponse.arrayBuffer();
-      const loginResponse = await request("/api/v1/auth/login", {
-        method: "POST",
-        headers: { "content-type": "application/json", accept: "application/json" },
-        body: JSON.stringify({ email, password }),
+      summary.push({
+        email,
+        displayName: profile.displayName,
+        age: person.age,
+        city: person.city,
+        intention: person.intention,
+        registrationStatus: registerResponse.status,
+        action: "skipped",
       });
-      const login = await responseBody(loginResponse);
-      if (!loginResponse.ok) stopForResponse(loginResponse, login);
-      token = login?.token;
-
-      const updateResponse = await request("/api/v1/me/profile", {
-        method: "PUT",
-        headers: {
-          authorization: `Bearer ${token}`,
-          "content-type": "application/json",
-          accept: "application/json",
-        },
-        body: JSON.stringify(profile),
-      });
-      const update = await responseBody(updateResponse);
-      if (!updateResponse.ok) stopForResponse(updateResponse, update);
-      action = "updated";
+      continue;
     } else {
       stopForResponse(registerResponse, await responseBody(registerResponse));
     }
@@ -258,6 +267,7 @@ async function main() {
       age: person.age,
       city: person.city,
       intention: person.intention,
+      registrationStatus: registerResponse.status,
       action,
     });
   }
