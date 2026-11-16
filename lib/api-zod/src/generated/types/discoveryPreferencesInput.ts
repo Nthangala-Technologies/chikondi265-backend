@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DiscoveryPreferencesInputIntentionsItem } from './discoveryPreferencesInputIntentionsItem';
 
 export interface DiscoveryPreferencesInput {
   /**
@@ -22,7 +23,7 @@ export interface DiscoveryPreferencesInput {
      * @items.minLength 1
      * @items.maxLength 40
      */
-  intentions: string[];
+  intentions: DiscoveryPreferencesInputIntentionsItem[];
   /**
      * @maxItems 20
      * @items.minLength 1

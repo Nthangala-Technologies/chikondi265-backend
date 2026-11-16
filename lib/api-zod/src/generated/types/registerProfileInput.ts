@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RegisterProfileInputIntention } from './registerProfileInputIntention';
 
 export interface RegisterProfileInput {
   /**
@@ -38,5 +39,5 @@ export interface RegisterProfileInput {
      * @minLength 1
      * @maxLength 40
      */
-  intention: string;
+  intention: RegisterProfileInputIntention;
 }

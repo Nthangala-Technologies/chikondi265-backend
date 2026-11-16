@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PublicProfileIntention } from './publicProfileIntention';
 import type { PublicProfilePhotoId } from './publicProfilePhotoId';
 import type { PublicProfileVerificationStatus } from './publicProfileVerificationStatus';
 
@@ -17,7 +18,7 @@ export interface PublicProfile {
   countryCode: string;
   bio: string;
   interests: string[];
-  intention: string;
+  intention: PublicProfileIntention;
   verificationStatus: PublicProfileVerificationStatus;
   photoId: PublicProfilePhotoId;
   /** @nullable */
