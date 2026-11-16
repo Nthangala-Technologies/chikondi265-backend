@@ -17,12 +17,16 @@ export const payChanguReturnRouter = Router();
 
 payChanguReturnRouter.get("/success", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.redirect(302, "chikondi265://payment-success");
+  res.type("html").send(
+    "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Payment returned</title><body style=\"font-family:system-ui,sans-serif;padding:2rem;max-width:36rem;margin:auto\"><h1>Payment flow complete</h1><p>You can close this page and return to Chikondi265. Chat access updates after the server confirms payment.</p></body></html>",
+  );
 });
 
 payChanguReturnRouter.get("/failure", (_req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.redirect(302, "chikondi265://payment-failed");
+  res.type("html").send(
+    "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Payment not completed</title><body style=\"font-family:system-ui,sans-serif;padding:2rem;max-width:36rem;margin:auto\"><h1>Payment not completed</h1><p>You can close this page and return to Chikondi265. No chat access was changed.</p></body></html>",
+  );
 });
 
 router.post(
