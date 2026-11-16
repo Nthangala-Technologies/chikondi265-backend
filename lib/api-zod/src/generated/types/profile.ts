@@ -5,17 +5,20 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ProfileIntention } from './profileIntention';
 import type { ProfilePhotoId } from './profilePhotoId';
 
 export interface Profile {
   userId: string;
+  /** @nullable */
+  username: string | null;
   displayName: string;
   birthDate: string;
   city: string;
   countryCode: string;
   bio: string;
   interests: string[];
-  intention: string;
+  intention: ProfileIntention;
   visibilityStatus: string;
   verificationStatus: string;
   photoId: ProfilePhotoId;

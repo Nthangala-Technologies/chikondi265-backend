@@ -5,9 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ProfileInputIntention } from './profileInputIntention';
 import type { ProfileInputPhotoId } from './profileInputPhotoId';
 
 export interface ProfileInput {
+  /**
+     * @minLength 3
+     * @maxLength 30
+     * @pattern ^[a-z0-9][a-z0-9_]{2,29}$
+     */
+  username?: string;
   /**
      * @minLength 1
      * @maxLength 50
@@ -33,6 +40,6 @@ export interface ProfileInput {
      * @minLength 1
      * @maxLength 40
      */
-  intention: string;
+  intention: ProfileInputIntention;
   photoId?: ProfileInputPhotoId;
 }

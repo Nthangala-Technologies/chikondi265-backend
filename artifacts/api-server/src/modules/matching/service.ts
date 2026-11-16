@@ -6,6 +6,7 @@ import {
   findConnectionsForUser,
   findDiscoveryPage,
   findIncomingLikes,
+  findSearchProfiles,
   findUserNotifications,
   getMatchingViewer,
   recordSwipe as persistSwipe,
@@ -27,6 +28,10 @@ export async function getDiscovery(
   }
 
   return findDiscoveryPage(viewer, limit, after);
+}
+
+export async function searchPublicProfiles(userId: string, query: string) {
+  return findSearchProfiles(userId, query);
 }
 
 export async function recordUserSwipe(

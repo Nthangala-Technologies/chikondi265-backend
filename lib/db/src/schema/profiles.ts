@@ -11,6 +11,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -23,6 +24,7 @@ export const profilesTable = pgTable(
     userId: uuid("user_id")
       .primaryKey()
       .references(() => usersTable.id, { onDelete: "cascade" }),
+    username: text("username"),
     displayName: varchar("display_name", { length: 50 }).notNull(),
     birthDate: date("birth_date", { mode: "string" }).notNull(),
     city: varchar("city", { length: 80 }).notNull(),
@@ -48,6 +50,9 @@ export const profilesTable = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
+    uniqueIndex("profiles_username_unique")
+      .on(sql`lower(${table.username})`)
+      .where(sql`${table.username} is not null`),
     check(
       "profiles_visibility_status_check",
       sql`${table.visibilityStatus} in ('active', 'paused', 'hidden', 'under_review', 'removed')`,

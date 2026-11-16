@@ -1,0 +1,1770 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Email and password authentication
+  - name: profiles
+    description: Authenticated user profile operations
+  - name: matching
+    description: Discovery, swipes, and connections
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /v1/auth/register:
+    post:
+      operationId: registerAccount
+      tags: [auth]
+      summary: Register a new account and create a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterAccountInput"
+      responses:
+        "201":
+          description: Account and session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          description: Invalid registration details or age requirement not met
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "409":
+          description: An account already uses this email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "429":
+          description: Too many registration attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/auth/login:
+    post:
+      operationId: loginAccount
+      tags: [auth]
+      summary: Sign in and create a revocable session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginAccountInput"
+      responses:
+        "200":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          description: Invalid sign-in details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Email or password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "429":
+          description: Too many sign-in attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/auth/logout:
+    post:
+      operationId: logoutAccount
+      tags: [auth]
+      summary: Revoke the current session
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Session revoked
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/me:
+    get:
+      operationId: getCurrentUser
+      tags: [profiles]
+      summary: Get the authenticated user's profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user and optional profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+    delete:
+      operationId: deleteCurrentAccount
+      tags: [profiles]
+      summary: Soft-delete the authenticated user's account
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Account soft-deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SoftDeleteAccountResult"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Account is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/me/payment-history:
+    get:
+      operationId: getCurrentUserPaymentHistory
+      tags: [payments]
+      summary: List the authenticated user's payment history
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Payment transactions belonging to the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentHistoryResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/me/profile:
+    put:
+      operationId: saveCurrentUserProfile
+      tags: [profiles]
+      summary: Create or replace the authenticated user's profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileInput"
+      responses:
+        "200":
+          description: Saved profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          description: Invalid profile data or age requirement not met, with field errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/me/photo:
+    post:
+      operationId: uploadCurrentUserPhoto
+      tags: [profiles]
+      summary: Upload the authenticated user's profile photo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/webp:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Photo saved for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadProfilePhotoResponse"
+        "400":
+          description: Invalid image content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "413":
+          description: Image exceeds the 5 MB limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "415":
+          description: Unsupported image format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/me/deactivate:
+    post:
+      operationId: deactivateCurrentAccount
+      tags: [profiles]
+      summary: Pause the authenticated user's profile in discovery
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profile paused
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/me/activate:
+    post:
+      operationId: activateCurrentAccount
+      tags: [profiles]
+      summary: Restore the authenticated user's profile in discovery
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profile restored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/me/password:
+    put:
+      operationId: changeCurrentPassword
+      tags: [profiles]
+      summary: Change the authenticated user's password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "200":
+          description: Password changed and other sessions invalidated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangePasswordResponse"
+        "400":
+          description: Invalid password details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Current password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/me/preferences:
+    get:
+      operationId: getCurrentPreferences
+      tags: [profiles]
+      summary: Get discovery preferences for the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Saved discovery preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryPreferences"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+    put:
+      operationId: saveCurrentPreferences
+      tags: [profiles]
+      summary: Save discovery preferences for the authenticated user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscoveryPreferencesInput"
+      responses:
+        "200":
+          description: Saved discovery preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryPreferences"
+        "400":
+          description: Invalid preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/discovery:
+    get:
+      operationId: getDiscovery
+      tags: [matching]
+      summary: List eligible profiles for the authenticated user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - name: after
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Eligible profiles and the next-page cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryPage"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: The authenticated user needs an eligible profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/search/users:
+    get:
+      operationId: searchUsers
+      tags: [profiles]
+      summary: Search active public profiles by username or display name
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 50
+      responses:
+        "200":
+          description: Up to 20 matching active profiles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResults"
+        "400":
+          description: The search query is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/swipes:
+    post:
+      operationId: recordSwipe
+      tags: [matching]
+      summary: Record a swipe and create a mutual connection when applicable
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SwipeInput"
+      responses:
+        "200":
+          description: Swipe result, with a connection when a mutual like exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SwipeResult"
+        "400":
+          description: Invalid swipe data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: The authenticated user needs an eligible profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "404":
+          description: The target profile is not available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/likes:
+    get:
+      operationId: getIncomingLikes
+      tags: [matching]
+      summary: List eligible positive swipes received by the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Incoming likes not yet mutually swiped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncomingLikesResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/realtime/token:
+    post:
+      operationId: requestRealtimeToken
+      tags: [auth]
+      summary: Request a user-scoped realtime token
+      description: Issues a short-lived Ably token limited to subscribing to the authenticated user's update channel.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Ably token request
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                properties:
+                  keyName:
+                    type: string
+                  timestamp:
+                    type: integer
+                  nonce:
+                    type: string
+                  mac:
+                    type: string
+                  clientId:
+                    type: string
+                  capability:
+                    type: string
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "503":
+          description: Realtime service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/notifications:
+    get:
+      operationId: getNotifications
+      tags: [matching]
+      summary: Get recent likes, matches, and unread messages
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Recent account activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationsResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/blocks:
+    post:
+      operationId: createBlock
+      tags: [matching]
+      summary: Block another user and hide both profiles from each other
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBlockInput"
+      responses:
+        "200":
+          description: Block saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockResult"
+        "400":
+          description: Invalid target user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/blocks/{userId}:
+    delete:
+      operationId: removeBlock
+      tags: [matching]
+      summary: Remove a block created by the authenticated user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Block removed or already absent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoveBlockResult"
+        "400":
+          description: Invalid target user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/reports:
+    post:
+      operationId: createSafetyReport
+      tags: [matching]
+      summary: Submit a report about another user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSafetyReportInput"
+      responses:
+        "201":
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SafetyReportResult"
+        "400":
+          description: Invalid report details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/connections:
+    get:
+      operationId: getConnections
+      tags: [matching]
+      summary: List the authenticated user's connections
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Connections involving the authenticated user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connection"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/connections/{id}:
+    get:
+      operationId: getConnection
+      tags: [matching]
+      summary: Get one connection involving the authenticated user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Connection details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+        "400":
+          description: Invalid connection ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "404":
+          description: Connection not found or not accessible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/connections/{id}/messages:
+    get:
+      operationId: getConnectionMessages
+      tags: [matching]
+      summary: List paginated messages for an unlocked connection
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Newest-first message page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionMessagePage"
+        "400":
+          description: Invalid connection ID or cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Caller is not a participant, chat is locked, or users are blocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+    post:
+      operationId: createConnectionMessage
+      tags: [matching]
+      summary: Send a deduplicated message in an unlocked connection
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConnectionMessageInput"
+      responses:
+        "200":
+          description: Existing message returned for an idempotent retry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionMessage"
+        "201":
+          description: Message created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionMessage"
+        "400":
+          description: Invalid connection ID or message body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Caller is not a participant, chat is locked, or users are blocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "409":
+          description: The client message ID was already used for another connection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/connections/{id}/messages/page/{cursor}:
+    get:
+      operationId: getConnectionMessagesAfterCursor
+      tags: [matching]
+      summary: Get the next older page of connection messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 512
+      responses:
+        "200":
+          description: Newest-first message page older than the cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionMessagePage"
+        "400":
+          description: Invalid connection ID or cursor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Caller is not a participant, chat is locked, or users are blocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/connections/{id}/payment-intents:
+    post:
+      operationId: createPaymentIntent
+      tags: [payments]
+      summary: Create a payment intent for a matched connection
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentIntentInput"
+      responses:
+        "200":
+          description: PayChangu checkout details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentIntentResponse"
+        "400":
+          description: Invalid payment-intent request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Caller is not a participant or connection is not payable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "404":
+          description: Connection not found or not accessible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "409":
+          description: Payment already succeeded or idempotency conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/payments/paychangu/webhook:
+    post:
+      operationId: receivePaychanguWebhook
+      tags: [payments]
+      summary: Receive a signature-verified PayChangu webhook
+      parameters:
+        - name: Signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayChanguWebhookInput"
+      responses:
+        "200":
+          description: Webhook received or ignored as a duplicate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayChanguWebhookResponse"
+        "400":
+          description: Invalid webhook payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Invalid webhook signature
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+components:
+  schemas:
+    RegisterAccountInput:
+      type: object
+      additionalProperties: false
+      properties:
+        identifier:
+          type: string
+          minLength: 1
+          maxLength: 320
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: "^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,128}$"
+        profile:
+          $ref: "#/components/schemas/RegisterProfileInput"
+      required: [identifier, password, profile]
+    LoginAccountInput:
+      type: object
+      additionalProperties: false
+      properties:
+        identifier:
+          type: string
+          minLength: 1
+          maxLength: 320
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+      required: [identifier, password]
+    RegisterProfileInput:
+      type: object
+      additionalProperties: false
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: "^[^0-9]+$"
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          pattern: "^[^0-9]+$"
+        birthDate:
+          type: string
+          format: date
+        city:
+          type: string
+          minLength: 1
+          maxLength: 80
+        countryCode:
+          type: string
+          minLength: 2
+          maxLength: 2
+        bio:
+          type: string
+          maxLength: 500
+        interests:
+          type: array
+          items:
+            type: string
+            maxLength: 40
+        intention:
+          type: string
+          minLength: 1
+          maxLength: 40
+          enum: ["long-term", "short-term", "casual", "friendship", "marriage", "unsure"]
+      required: [firstName, lastName, birthDate, city, intention]
+    AuthSessionResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+          nullable: true
+        profile:
+          anyOf:
+            - $ref: "#/components/schemas/Profile"
+            - type: "null"
+      required: [token, expiresAt, userId, email, profile]
+    UploadProfilePhotoResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        photoUrl:
+          type: string
+          format: uri-reference
+        moderationStatus:
+          type: string
+          enum: [pending]
+      required: [photoUrl, moderationStatus]
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ProfileInput:
+      type: object
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+          pattern: "^[a-z0-9][a-z0-9_]{2,29}$"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 50
+        birthDate:
+          type: string
+          format: date
+        city:
+          type: string
+          minLength: 1
+          maxLength: 80
+        countryCode:
+          type: string
+          pattern: "^[A-Z]{2}$"
+          default: MW
+        bio:
+          type: string
+          maxLength: 500
+        interests:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        intention:
+          type: string
+          minLength: 1
+          maxLength: 40
+          enum: ["long-term", "short-term", "casual", "friendship", "marriage", "unsure"]
+        photoId:
+          type: string
+          enum: [woman-01, woman-02, woman-03, man-01, man-02, man-03]
+      required:
+        - displayName
+        - birthDate
+        - city
+        - intention
+    Profile:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+          nullable: true
+        displayName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        city:
+          type: string
+        countryCode:
+          type: string
+        bio:
+          type: string
+        interests:
+          type: array
+          items:
+            type: string
+        intention:
+          type: string
+          enum: ["long-term", "short-term", "casual", "friendship", "marriage", "unsure"]
+        visibilityStatus:
+          type: string
+        verificationStatus:
+          type: string
+        photoId:
+          type: string
+          enum: [woman-01, woman-02, woman-03, man-01, man-02, man-03]
+        photoUrl:
+          type: string
+          format: uri-reference
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - userId
+        - username
+        - displayName
+        - birthDate
+        - city
+        - countryCode
+        - bio
+        - interests
+        - intention
+        - visibilityStatus
+        - verificationStatus
+        - photoId
+        - createdAt
+        - updatedAt
+    UserSearchResults:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/SearchUserProfile"
+      required: [items]
+    SearchUserProfile:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+          nullable: true
+        displayName:
+          type: string
+        age:
+          type: integer
+          minimum: 18
+        city:
+          type: string
+        countryCode:
+          type: string
+        bio:
+          type: string
+        interests:
+          type: array
+          items:
+            type: string
+        intention:
+          type: string
+          enum: ["long-term", "short-term", "casual", "friendship", "marriage", "unsure"]
+        verificationStatus:
+          type: string
+          enum: [unverified, pending, verified, rejected]
+        photoId:
+          type: string
+          enum: [woman-01, woman-02, woman-03, man-01, man-02, man-03]
+        photoUrl:
+          type: string
+          format: uri-reference
+          nullable: true
+      required:
+        - userId
+        - username
+        - displayName
+        - age
+        - city
+        - countryCode
+        - bio
+        - interests
+        - intention
+        - verificationStatus
+        - photoId
+        - photoUrl
+    ChangePasswordInput:
+      type: object
+      additionalProperties: false
+      properties:
+        currentPassword:
+          type: string
+          minLength: 12
+          maxLength: 128
+        newPassword:
+          type: string
+          minLength: 12
+          maxLength: 128
+      required: [currentPassword, newPassword]
+    ChangePasswordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        changed:
+          type: boolean
+          enum: [true]
+      required: [changed]
+    SoftDeleteAccountResult:
+      type: object
+      additionalProperties: false
+      properties:
+        deleted:
+          type: boolean
+          enum: [true]
+      required: [deleted]
+    CurrentUserResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          anyOf:
+            - type: string
+              format: email
+            - type: "null"
+        profile:
+          anyOf:
+            - $ref: "#/components/schemas/Profile"
+            - type: "null"
+      required:
+        - userId
+        - email
+        - profile
+    DiscoveryPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicProfile"
+        nextCursor:
+          type: ["string", "null"]
+          format: uuid
+      required:
+        - items
+        - nextCursor
+    PublicProfile:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        age:
+          type: integer
+          minimum: 18
+        city:
+          type: string
+        countryCode:
+          type: string
+        bio:
+          type: string
+        interests:
+          type: array
+          items:
+            type: string
+        intention:
+          type: string
+          enum: ["long-term", "short-term", "casual", "friendship", "marriage", "unsure"]
+        verificationStatus:
+          type: string
+          enum: [unverified, pending, verified, rejected]
+        photoId:
+          type: string
+          enum: [woman-01, woman-02, woman-03, man-01, man-02, man-03]
+        photoUrl:
+          type: string
+          format: uri-reference
+          nullable: true
+      required:
+        - userId
+        - displayName
+        - age
+        - city
+        - countryCode
+        - bio
+        - interests
+        - intention
+        - verificationStatus
+        - photoId
+    DiscoveryPreferencesInput:
+      type: object
+      additionalProperties: false
+      properties:
+        ageMin:
+          type: integer
+          minimum: 18
+          maximum: 99
+        ageMax:
+          type: integer
+          minimum: 18
+          maximum: 99
+        intentions:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+            enum: ["long-term", "short-term", "casual", "friendship", "marriage", "unsure"]
+        interests:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        cities:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 80
+      required: [ageMin, ageMax, intentions, interests, cities]
+    DiscoveryPreferences:
+      allOf:
+        - $ref: "#/components/schemas/DiscoveryPreferencesInput"
+        - type: object
+          additionalProperties: false
+          properties:
+            updatedAt:
+              type: ["string", "null"]
+              format: date-time
+          required: [updatedAt]
+    IncomingLikesResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncomingLike"
+      required: [items]
+    IncomingLike:
+      type: object
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+          enum: [like, super]
+        createdAt:
+          type: string
+          format: date-time
+        profile:
+          $ref: "#/components/schemas/PublicProfile"
+      required: [action, createdAt, profile]
+    NotificationsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+      required: [items]
+    Notification:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [like, match, message]
+        title:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        userId:
+          type: ["string", "null"]
+          format: uuid
+        connectionId:
+          type: ["string", "null"]
+          format: uuid
+      required: [id, kind, title, body, createdAt, userId, connectionId]
+    CreateBlockInput:
+      type: object
+      additionalProperties: false
+      properties:
+        blockedUserId:
+          type: string
+          format: uuid
+      required: [blockedUserId]
+    BlockResult:
+      type: object
+      additionalProperties: false
+      properties:
+        blocked:
+          type: boolean
+          enum: [true]
+      required: [blocked]
+    RemoveBlockResult:
+      type: object
+      additionalProperties: false
+      properties:
+        unblocked:
+          type: boolean
+          enum: [true]
+      required: [unblocked]
+    CreateSafetyReportInput:
+      type: object
+      additionalProperties: false
+      properties:
+        reportedUserId:
+          type: string
+          format: uuid
+        connectionId:
+          type: string
+          format: uuid
+        category:
+          type: string
+          enum: [harassment, scam, impersonation, underage, other]
+        details:
+          type: string
+          maxLength: 1000
+      required: [reportedUserId, category]
+    SafetyReportResult:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [open]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, status, createdAt]
+    SwipeInput:
+      type: object
+      additionalProperties: false
+      properties:
+        targetUserId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [like, pass, super]
+      required:
+        - targetUserId
+        - action
+    SwipeResult:
+      type: object
+      additionalProperties: false
+      properties:
+        targetUserId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [like, pass, super]
+        matched:
+          type: boolean
+        connectionId:
+          type: ["string", "null"]
+          format: uuid
+      required:
+        - targetUserId
+        - action
+        - matched
+        - connectionId
+    Connection:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [matched, chat_enabled, closed]
+        matchedAt:
+          type: string
+          format: date-time
+        chatEnabledAt:
+          type: ["string", "null"]
+          format: date-time
+        otherProfile:
+          anyOf:
+            - $ref: "#/components/schemas/PublicProfile"
+            - type: "null"
+      required:
+        - id
+        - status
+        - matchedAt
+        - chatEnabledAt
+        - otherProfile
+    CreateConnectionMessageInput:
+      type: object
+      additionalProperties: false
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        clientMessageId:
+          type: string
+          format: uuid
+      required: [body, clientMessageId]
+    ConnectionMessage:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        connectionId:
+          type: string
+          format: uuid
+        senderUserId:
+          type: string
+          format: uuid
+        clientMessageId:
+          type: string
+          format: uuid
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [id, connectionId, senderUserId, clientMessageId, body, createdAt, readAt]
+    ConnectionMessagePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectionMessage"
+        nextCursor:
+          type: ["string", "null"]
+      required: [items, nextCursor]
+    PaymentIntentInput:
+      type: object
+      additionalProperties: false
+      properties:
+        idempotencyKey:
+          type: string
+          minLength: 1
+          maxLength: 255
+    PaymentIntentResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        checkoutUrl:
+          type: string
+          format: uri
+        txRef:
+          type: string
+        paymentAttemptId:
+          type: string
+          format: uuid
+      required:
+        - checkoutUrl
+        - txRef
+        - paymentAttemptId
+    PaymentHistoryResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentHistoryItem"
+      required: [items]
+    PaymentHistoryItem:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        provider:
+          type: string
+          enum: [paychangu]
+        reference:
+          type: string
+        amountMwk:
+          type: integer
+          minimum: 1
+        currency:
+          type: string
+          enum: [MWK]
+        status:
+          type: string
+          enum: [pending, succeeded, failed, cancelled, reversed]
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - id
+        - description
+        - provider
+        - reference
+        - amountMwk
+        - currency
+        - status
+        - createdAt
+        - completedAt
+    PayChanguWebhookInput:
+      type: object
+      additionalProperties: true
+      properties:
+        tx_ref:
+          type: string
+    PayChanguWebhookResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        received:
+          type: boolean
+          enum: [true]
+      required:
+        - received
+    ApiErrorEnvelope:
+      type: object
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            requestId:
+              type: string
+            fieldErrors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+          required:
+            - code
+            - message
+            - requestId
+      required:
+        - error
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

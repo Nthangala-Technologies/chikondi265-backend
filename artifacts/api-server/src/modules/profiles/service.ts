@@ -35,14 +35,23 @@ export async function saveCurrentUserProfile(
 ) {
   const normalized = {
     ...input,
+    username: input.username?.trim().toLowerCase(),
     displayName: input.displayName.trim(),
     city: input.city.trim(),
     bio: input.bio?.trim() ?? "",
-    intention: input.intention.trim(),
+    intention: input.intention,
     interests: input.interests?.map((interest) => interest.trim()) ?? [],
   };
 
   const fieldErrors: Record<string, string[]> = {};
+  if (
+    normalized.username !== undefined &&
+    !/^[a-z0-9][a-z0-9_]{2,29}$/.test(normalized.username)
+  ) {
+    fieldErrors.username = [
+      "Use 3–30 lowercase letters, numbers, or underscores; start with a letter or number.",
+    ];
+  }
   if (!normalized.displayName) {
     fieldErrors.displayName = ["Enter a display name."];
   }
@@ -75,7 +84,38 @@ export async function saveCurrentUserProfile(
     );
   }
 
-  const saved = await saveOwnProfile(userId, normalized);
+  let saved: Awaited<ReturnType<typeof saveOwnProfile>>;
+  try {
+    saved = await saveOwnProfile(userId, normalized);
+  } catch (error) {
+    const visited = new Set<object>();
+    let candidate: unknown = error;
+    while (
+      candidate &&
+      typeof candidate === "object" &&
+      !visited.has(candidate)
+    ) {
+      visited.add(candidate);
+      const databaseError = candidate as {
+        code?: unknown;
+        constraint?: unknown;
+        cause?: unknown;
+      };
+      if (
+        databaseError.code === "23505" &&
+        databaseError.constraint === "profiles_username_unique"
+      ) {
+        throw new ApiError(
+          409,
+          "CONFLICT",
+          "A profile with this username already exists.",
+          { username: ["That username is already taken."] },
+        );
+      }
+      candidate = databaseError.cause;
+    }
+    throw error;
+  }
   await publishUserDataUpdates([userId]);
   return saved;
 }
@@ -125,8 +165,8 @@ export async function saveCurrentPreferences(
     );
   }
 
-  const normalizeUnique = (values: string[]) => {
-    const normalized = values.map((value) => value.trim());
+  const normalizeUnique = <T extends string>(values: T[]): T[] | null => {
+    const normalized = values.map((value) => value.trim()) as T[];
     if (normalized.some((value) => value.length === 0)) return null;
     if (new Set(normalized.map((value) => value.toLowerCase())).size !== normalized.length) {
       return null;

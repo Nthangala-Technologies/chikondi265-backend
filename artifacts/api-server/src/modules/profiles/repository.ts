@@ -126,6 +126,9 @@ export async function getOwnAccountEmail(userId: string) {
 
 export async function saveOwnProfile(userId: string, input: ProfileInput) {
   const values = {
+    ...(input.username === undefined
+      ? {}
+      : { username: input.username.trim().toLowerCase() }),
     displayName: input.displayName.trim(),
     birthDate: input.birthDate,
     city: input.city.trim(),

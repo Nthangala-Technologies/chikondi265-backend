@@ -97,6 +97,19 @@ function normalizeProfile(profile: RegisterProfileInput) {
   };
 }
 
+function createRegistrationUsername(firstName: string, lastName: string) {
+  const slug = (value: string) =>
+    value
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  const name = [slug(firstName), slug(lastName)].filter(Boolean).join("_");
+  const stem = (name || "user").slice(0, 23).replace(/_+$/g, "") || "user";
+  return `${stem}_${randomUUID().replace(/-/g, "").slice(0, 6)}`;
+}
+
 function isEmailUniqueViolation(error: unknown): boolean {
   const visited = new Set<object>();
   let candidate: unknown = error;
@@ -111,6 +124,29 @@ function isEmailUniqueViolation(error: unknown): boolean {
     if (
       databaseError.code === "23505" &&
       databaseError.constraint === "users_email_unique"
+    ) {
+      return true;
+    }
+    candidate = databaseError.cause;
+  }
+
+  return false;
+}
+
+function isUsernameUniqueViolation(error: unknown): boolean {
+  const visited = new Set<object>();
+  let candidate: unknown = error;
+
+  while (candidate && typeof candidate === "object" && !visited.has(candidate)) {
+    visited.add(candidate);
+    const databaseError = candidate as {
+      code?: unknown;
+      constraint?: unknown;
+      cause?: unknown;
+    };
+    if (
+      databaseError.code === "23505" &&
+      databaseError.constraint === "profiles_username_unique"
     ) {
       return true;
     }
@@ -190,7 +226,14 @@ export async function registerAccount(input: RegisterAccountInput) {
 
       const [savedProfile] = await transaction
         .insert(profilesTable)
-        .values({ userId: user.id, ...profile })
+        .values({
+          userId: user.id,
+          ...profile,
+          username: createRegistrationUsername(
+            input.profile.firstName,
+            input.profile.lastName,
+          ),
+        })
         .returning();
 
       const token = createSessionToken();
@@ -227,6 +270,14 @@ export async function registerAccount(input: RegisterAccountInput) {
         "CONFLICT",
         "An account with this phone number already exists.",
         { identifier: ["An account with this phone number already exists."] },
+      );
+    }
+    if (isUsernameUniqueViolation(error)) {
+      throw new ApiError(
+        409,
+        "CONFLICT",
+        "A profile with this username already exists.",
+        { username: ["Choose a different username."] },
       );
     }
     throw error;

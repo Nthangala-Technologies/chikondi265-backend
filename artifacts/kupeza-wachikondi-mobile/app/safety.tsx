@@ -1,0 +1,12 @@
+import { Feather } from '@expo/vector-icons';
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Header, Shell } from '@/components/ui';
+import { useColors } from '@/hooks/useColors';
+
+export default function SafetyScreen() {
+  const colors = useColors();
+  const items = [['shield', 'Keep conversations here', 'Take your time before sharing contact details.'], ['eye-off', 'Block and report', 'You can block a profile or report behaviour from profile screens.'], ['map-pin', 'Meet thoughtfully', 'Choose a public place and let someone you trust know your plans.']] as const;
+  return <Shell><Header title="Safety centre" back /><Text style={[styles.title, { color: colors.foreground }]}>Your comfort comes first.</Text><Text style={[styles.copy, { color: colors.mutedForeground }]}>Chikondi265 App is designed to give you control at every step.</Text>{items.map(([icon, title, body]) => <View key={title} style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.icon, { backgroundColor: colors.secondary }]}><Feather name={icon} size={18} color={colors.secondaryForeground} /></View><View style={{ flex: 1 }}><Text style={[styles.itemTitle, { color: colors.foreground }]}>{title}</Text><Text style={[styles.itemCopy, { color: colors.mutedForeground }]}>{body}</Text></View></View>)}<Pressable onPress={() => undefined} style={styles.report}><Feather name="flag" size={17} color={colors.destructive} /><Text style={{ color: colors.destructive, fontFamily: 'Inter_700Bold' }}>Report a concern</Text></Pressable></Shell>;
+}
+const styles = StyleSheet.create({ title: { fontFamily: 'Inter_700Bold', fontSize: 28, letterSpacing: -1, marginTop: 15 }, copy: { fontSize: 14, lineHeight: 21, marginTop: 8, marginBottom: 22 }, row: { flexDirection: 'row', gap: 12, padding: 15, borderWidth: 1, borderRadius: 18, marginBottom: 10 }, icon: { width: 38, height: 38, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }, itemTitle: { fontFamily: 'Inter_700Bold', fontSize: 14 }, itemCopy: { fontSize: 12, lineHeight: 18, marginTop: 4 }, report: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, padding: 16, marginTop: 10 } });

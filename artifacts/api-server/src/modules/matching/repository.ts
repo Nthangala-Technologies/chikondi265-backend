@@ -7,6 +7,7 @@ import {
   gt,
   inArray,
   isNull,
+  ilike,
   ne,
   notExists,
   or,
@@ -264,6 +265,46 @@ export async function findDiscoveryPage(
     items: await attachPhotoIds(page),
     nextCursor: hasMore ? (page.at(-1)?.userId ?? null) : null,
   };
+}
+
+export async function findSearchProfiles(
+  viewerId: string,
+  query: string,
+) {
+  const pattern = `%${query.trim()}%`;
+  const rows = await db
+    .select({
+      userId: profilesTable.userId,
+      username: profilesTable.username,
+      displayName: profilesTable.displayName,
+      age: profileAge(profilesTable.birthDate),
+      city: profilesTable.city,
+      countryCode: profilesTable.countryCode,
+      bio: profilesTable.bio,
+      interests: profilesTable.interests,
+      intention: profilesTable.intention,
+      verificationStatus: profilesTable.verificationStatus,
+    })
+    .from(profilesTable)
+    .innerJoin(usersTable, eq(usersTable.id, profilesTable.userId))
+    .where(
+      and(
+        eq(usersTable.status, "active"),
+        isNull(usersTable.deletedAt),
+        eq(profilesTable.visibilityStatus, "active"),
+        gte(profileAge(profilesTable.birthDate), 18),
+        ne(profilesTable.userId, viewerId),
+        or(
+          ilike(profilesTable.username, pattern),
+          ilike(profilesTable.displayName, pattern),
+        ),
+        notBlockedEitherWay(viewerId),
+      ),
+    )
+    .orderBy(asc(profilesTable.displayName), asc(profilesTable.userId))
+    .limit(20);
+
+  return attachPhotoIds(rows);
 }
 
 export async function findIncomingLikes(

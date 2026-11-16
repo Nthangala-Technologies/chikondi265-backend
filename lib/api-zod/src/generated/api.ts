@@ -44,8 +44,6 @@ export const registerAccountBodyProfileBioMax = 500;
 
 export const registerAccountBodyProfileInterestsItemMax = 40;
 
-export const registerAccountBodyProfileIntentionMax = 40;
-
 
 
 export const RegisterAccountBody = zod.object({
@@ -59,7 +57,7 @@ export const RegisterAccountBody = zod.object({
   "countryCode": zod.string().min(registerAccountBodyProfileCountryCodeMin).max(registerAccountBodyProfileCountryCodeMax).optional(),
   "bio": zod.string().max(registerAccountBodyProfileBioMax).optional(),
   "interests": zod.array(zod.string().max(registerAccountBodyProfileInterestsItemMax)).optional(),
-  "intention": zod.string().min(1).max(registerAccountBodyProfileIntentionMax)
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure'])
 })
 })
 
@@ -70,13 +68,14 @@ export const RegisterAccountResponse = zod.object({
   "email": zod.string().email().nullable(),
   "profile": zod.union([zod.object({
   "userId": zod.string().uuid(),
+  "username": zod.string().nullable(),
   "displayName": zod.string(),
   "birthDate": zod.string().date(),
   "city": zod.string(),
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
@@ -109,13 +108,14 @@ export const LoginAccountResponse = zod.object({
   "email": zod.string().email().nullable(),
   "profile": zod.union([zod.object({
   "userId": zod.string().uuid(),
+  "username": zod.string().nullable(),
   "displayName": zod.string(),
   "birthDate": zod.string().date(),
   "city": zod.string(),
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
@@ -140,13 +140,14 @@ export const GetCurrentUserResponse = zod.object({
   "email": zod.union([zod.string().email(),zod.null()]),
   "profile": zod.union([zod.object({
   "userId": zod.string().uuid(),
+  "username": zod.string().nullable(),
   "displayName": zod.string(),
   "birthDate": zod.string().date(),
   "city": zod.string(),
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
@@ -166,8 +167,34 @@ export const DeleteCurrentAccountResponse = zod.object({
 
 
 /**
+ * @summary List the authenticated user's payment history
+ */
+
+
+
+export const GetCurrentUserPaymentHistoryResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "description": zod.string(),
+  "provider": zod.enum(['paychangu']),
+  "reference": zod.string(),
+  "amountMwk": zod.number().int().min(1),
+  "currency": zod.enum(['MWK']),
+  "status": zod.enum(['pending', 'succeeded', 'failed', 'cancelled', 'reversed']),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "completedAt": zod.string().datetime({"offset":true}).nullable()
+}))
+})
+
+
+/**
  * @summary Create or replace the authenticated user's profile
  */
+export const saveCurrentUserProfileBodyUsernameMin = 3;
+export const saveCurrentUserProfileBodyUsernameMax = 30;
+
+
+export const saveCurrentUserProfileBodyUsernameRegExp = new RegExp('^[a-z0-9][a-z0-9_]{2,29}$');
 export const saveCurrentUserProfileBodyDisplayNameMax = 50;
 
 export const saveCurrentUserProfileBodyCityMax = 80;
@@ -180,30 +207,30 @@ export const saveCurrentUserProfileBodyInterestsItemMax = 40;
 
 export const saveCurrentUserProfileBodyInterestsMax = 20;
 
-export const saveCurrentUserProfileBodyIntentionMax = 40;
-
 
 
 export const SaveCurrentUserProfileBody = zod.object({
+  "username": zod.string().min(saveCurrentUserProfileBodyUsernameMin).max(saveCurrentUserProfileBodyUsernameMax).regex(saveCurrentUserProfileBodyUsernameRegExp).optional(),
   "displayName": zod.string().min(1).max(saveCurrentUserProfileBodyDisplayNameMax),
   "birthDate": zod.string().date(),
   "city": zod.string().min(1).max(saveCurrentUserProfileBodyCityMax),
   "countryCode": zod.string().regex(saveCurrentUserProfileBodyCountryCodeRegExp).default(saveCurrentUserProfileBodyCountryCodeDefault),
   "bio": zod.string().max(saveCurrentUserProfileBodyBioMax).optional(),
   "interests": zod.array(zod.string().min(1).max(saveCurrentUserProfileBodyInterestsItemMax)).max(saveCurrentUserProfileBodyInterestsMax).optional(),
-  "intention": zod.string().min(1).max(saveCurrentUserProfileBodyIntentionMax),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']).optional()
 })
 
 export const SaveCurrentUserProfileResponse = zod.object({
   "userId": zod.string().uuid(),
+  "username": zod.string().nullable(),
   "displayName": zod.string(),
   "birthDate": zod.string().date(),
   "city": zod.string(),
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
@@ -227,13 +254,14 @@ export const UploadCurrentUserPhotoResponse = zod.object({
  */
 export const DeactivateCurrentAccountResponse = zod.object({
   "userId": zod.string().uuid(),
+  "username": zod.string().nullable(),
   "displayName": zod.string(),
   "birthDate": zod.string().date(),
   "city": zod.string(),
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
@@ -248,13 +276,14 @@ export const DeactivateCurrentAccountResponse = zod.object({
  */
 export const ActivateCurrentAccountResponse = zod.object({
   "userId": zod.string().uuid(),
+  "username": zod.string().nullable(),
   "displayName": zod.string(),
   "birthDate": zod.string().date(),
   "city": zod.string(),
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "visibilityStatus": zod.string(),
   "verificationStatus": zod.string(),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
@@ -294,8 +323,6 @@ export const getCurrentPreferencesResponseOneAgeMinMax = 99;
 export const getCurrentPreferencesResponseOneAgeMaxMin = 18;
 export const getCurrentPreferencesResponseOneAgeMaxMax = 99;
 
-export const getCurrentPreferencesResponseOneIntentionsItemMax = 40;
-
 export const getCurrentPreferencesResponseOneIntentionsMax = 20;
 
 export const getCurrentPreferencesResponseOneInterestsItemMax = 40;
@@ -311,7 +338,7 @@ export const getCurrentPreferencesResponseOneCitiesMax = 20;
 export const GetCurrentPreferencesResponse = zod.object({
   "ageMin": zod.number().int().min(getCurrentPreferencesResponseOneAgeMinMin).max(getCurrentPreferencesResponseOneAgeMinMax),
   "ageMax": zod.number().int().min(getCurrentPreferencesResponseOneAgeMaxMin).max(getCurrentPreferencesResponseOneAgeMaxMax),
-  "intentions": zod.array(zod.string().min(1).max(getCurrentPreferencesResponseOneIntentionsItemMax)).max(getCurrentPreferencesResponseOneIntentionsMax),
+  "intentions": zod.array(zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure'])).max(getCurrentPreferencesResponseOneIntentionsMax),
   "interests": zod.array(zod.string().min(1).max(getCurrentPreferencesResponseOneInterestsItemMax)).max(getCurrentPreferencesResponseOneInterestsMax),
   "cities": zod.array(zod.string().min(1).max(getCurrentPreferencesResponseOneCitiesItemMax)).max(getCurrentPreferencesResponseOneCitiesMax)
 }).and(zod.object({
@@ -328,8 +355,6 @@ export const saveCurrentPreferencesBodyAgeMinMax = 99;
 export const saveCurrentPreferencesBodyAgeMaxMin = 18;
 export const saveCurrentPreferencesBodyAgeMaxMax = 99;
 
-export const saveCurrentPreferencesBodyIntentionsItemMax = 40;
-
 export const saveCurrentPreferencesBodyIntentionsMax = 20;
 
 export const saveCurrentPreferencesBodyInterestsItemMax = 40;
@@ -345,7 +370,7 @@ export const saveCurrentPreferencesBodyCitiesMax = 20;
 export const SaveCurrentPreferencesBody = zod.object({
   "ageMin": zod.number().int().min(saveCurrentPreferencesBodyAgeMinMin).max(saveCurrentPreferencesBodyAgeMinMax),
   "ageMax": zod.number().int().min(saveCurrentPreferencesBodyAgeMaxMin).max(saveCurrentPreferencesBodyAgeMaxMax),
-  "intentions": zod.array(zod.string().min(1).max(saveCurrentPreferencesBodyIntentionsItemMax)).max(saveCurrentPreferencesBodyIntentionsMax),
+  "intentions": zod.array(zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure'])).max(saveCurrentPreferencesBodyIntentionsMax),
   "interests": zod.array(zod.string().min(1).max(saveCurrentPreferencesBodyInterestsItemMax)).max(saveCurrentPreferencesBodyInterestsMax),
   "cities": zod.array(zod.string().min(1).max(saveCurrentPreferencesBodyCitiesItemMax)).max(saveCurrentPreferencesBodyCitiesMax)
 })
@@ -355,8 +380,6 @@ export const saveCurrentPreferencesResponseOneAgeMinMax = 99;
 
 export const saveCurrentPreferencesResponseOneAgeMaxMin = 18;
 export const saveCurrentPreferencesResponseOneAgeMaxMax = 99;
-
-export const saveCurrentPreferencesResponseOneIntentionsItemMax = 40;
 
 export const saveCurrentPreferencesResponseOneIntentionsMax = 20;
 
@@ -373,7 +396,7 @@ export const saveCurrentPreferencesResponseOneCitiesMax = 20;
 export const SaveCurrentPreferencesResponse = zod.object({
   "ageMin": zod.number().int().min(saveCurrentPreferencesResponseOneAgeMinMin).max(saveCurrentPreferencesResponseOneAgeMinMax),
   "ageMax": zod.number().int().min(saveCurrentPreferencesResponseOneAgeMaxMin).max(saveCurrentPreferencesResponseOneAgeMaxMax),
-  "intentions": zod.array(zod.string().min(1).max(saveCurrentPreferencesResponseOneIntentionsItemMax)).max(saveCurrentPreferencesResponseOneIntentionsMax),
+  "intentions": zod.array(zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure'])).max(saveCurrentPreferencesResponseOneIntentionsMax),
   "interests": zod.array(zod.string().min(1).max(saveCurrentPreferencesResponseOneInterestsItemMax)).max(saveCurrentPreferencesResponseOneInterestsMax),
   "cities": zod.array(zod.string().min(1).max(saveCurrentPreferencesResponseOneCitiesItemMax)).max(saveCurrentPreferencesResponseOneCitiesMax)
 }).and(zod.object({
@@ -407,12 +430,48 @@ export const GetDiscoveryResponse = zod.object({
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
   "photoUrl": zod.string().nullish()
 })),
   "nextCursor": zod.string().uuid().nullable()
+})
+
+
+/**
+ * @summary Search active public profiles by username or display name
+ */
+export const searchUsersQueryQMin = 3;
+export const searchUsersQueryQMax = 50;
+
+
+
+export const SearchUsersQueryParams = zod.object({
+  "q": zod.coerce.string().min(searchUsersQueryQMin).max(searchUsersQueryQMax)
+})
+
+export const searchUsersResponseItemsItemAgeMin = 18;
+
+export const searchUsersResponseItemsMax = 20;
+
+
+
+export const SearchUsersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "userId": zod.string().uuid(),
+  "username": zod.string().nullable(),
+  "displayName": zod.string(),
+  "age": zod.number().int().min(searchUsersResponseItemsItemAgeMin),
+  "city": zod.string(),
+  "countryCode": zod.string(),
+  "bio": zod.string(),
+  "interests": zod.array(zod.string()),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
+  "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
+  "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
+  "photoUrl": zod.string().nullable()
+})).max(searchUsersResponseItemsMax)
 })
 
 
@@ -451,12 +510,26 @@ export const GetIncomingLikesResponse = zod.object({
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
   "photoUrl": zod.string().nullish()
 })
 }))
+})
+
+
+/**
+ * Issues a short-lived Ably token limited to subscribing to the authenticated user's update channel.
+ * @summary Request a user-scoped realtime token
+ */
+export const RequestRealtimeTokenResponse = zod.object({
+  "keyName": zod.string().optional(),
+  "timestamp": zod.number().int().optional(),
+  "nonce": zod.string().optional(),
+  "mac": zod.string().optional(),
+  "clientId": zod.string().optional(),
+  "capability": zod.string().optional()
 })
 
 
@@ -541,7 +614,7 @@ export const GetConnectionsResponseItem = zod.object({
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
   "photoUrl": zod.string().nullish()
@@ -574,7 +647,7 @@ export const GetConnectionResponse = zod.object({
   "countryCode": zod.string(),
   "bio": zod.string(),
   "interests": zod.array(zod.string()),
-  "intention": zod.string(),
+  "intention": zod.enum(['long-term', 'short-term', 'casual', 'friendship', 'marriage', 'unsure']),
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
   "photoUrl": zod.string().nullish()
