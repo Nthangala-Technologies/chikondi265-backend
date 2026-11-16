@@ -4,6 +4,7 @@ import {
   canonicalUserPair,
   isEligibleViewer,
   isPositiveSwipe,
+  normalizeProfileIntention,
 } from "../src/modules/matching/policy.ts";
 
 const eligibleViewer = {
@@ -62,4 +63,12 @@ test("canonicalizes a pair consistently regardless of swipe direction", () => {
   const second = "00000000-0000-0000-0000-000000000002";
   assert.deepEqual(canonicalUserPair(first, second), [first, second]);
   assert.deepEqual(canonicalUserPair(second, first), [first, second]);
+});
+
+test("normalizes legacy profile intentions without masking unknown values", () => {
+  assert.equal(normalizeProfileIntention("LONG"), "long-term");
+  assert.equal(normalizeProfileIntention("SHORT"), "short-term");
+  assert.equal(normalizeProfileIntention("CASUAL"), "casual");
+  assert.equal(normalizeProfileIntention("friendship"), "friendship");
+  assert.equal(normalizeProfileIntention(" unknown "), "unknown");
 });

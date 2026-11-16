@@ -28,6 +28,7 @@ import {
   canonicalUserPair,
   isEligibleViewer,
   isPositiveSwipe,
+  normalizeProfileIntention,
   type MatchingViewer,
 } from "./policy";
 import {
@@ -126,7 +127,7 @@ export async function getMatchingViewer(
       countryCode: row.countryCode,
       bio: row.bio,
       interests: row.profileInterests,
-      intention: row.intention,
+      intention: normalizeProfileIntention(row.intention),
       visibilityStatus: row.visibilityStatus,
     },
     preferences: {
@@ -633,8 +634,15 @@ async function attachPhotoIds<T extends { userId: string }>(
 
   return profiles.map((profile) => {
     const objectKey = photoKeys.get(profile.userId);
+    const normalizedProfile =
+      "intention" in profile && typeof profile.intention === "string"
+        ? {
+            ...profile,
+            intention: normalizeProfileIntention(profile.intention),
+          }
+        : profile;
     return {
-      ...profile,
+      ...normalizedProfile,
       photoId:
         avatarIdFromObjectKey(objectKey) ??
         defaultAvatarForUser(profile.userId),

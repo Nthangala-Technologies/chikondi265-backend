@@ -22,6 +22,22 @@ export interface MatchingViewer {
   };
 }
 
+const legacyProfileIntentions: Record<string, string> = {
+  LONG: "long-term",
+  "LONG-TERM": "long-term",
+  SHORT: "short-term",
+  "SHORT-TERM": "short-term",
+  CASUAL: "casual",
+  FRIENDSHIP: "friendship",
+  MARRIAGE: "marriage",
+  UNSURE: "unsure",
+};
+
+export function normalizeProfileIntention(value: string): string {
+  const trimmed = value.trim();
+  return legacyProfileIntentions[trimmed.toUpperCase()] ?? trimmed;
+}
+
 export function isEligibleViewer(
   viewer: MatchingViewer | null,
 ): viewer is MatchingViewer {
