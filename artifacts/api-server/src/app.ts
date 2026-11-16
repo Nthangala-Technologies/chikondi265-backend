@@ -3,7 +3,10 @@ import cors from "cors";
 import { randomUUID } from "node:crypto";
 import pinoHttp from "pino-http";
 import router from "./routes";
-import { payChanguWebhookRouter } from "./routes/v1/payments";
+import {
+  payChanguReturnRouter,
+  payChanguWebhookRouter,
+} from "./routes/v1/payments";
 import { isAllowedCorsOrigin } from "./lib/config";
 import { logger } from "./lib/logger";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
@@ -53,6 +56,10 @@ app.use(
   "/api/v1/payments/paychangu/webhook",
   express.raw({ type: "application/json", limit: "64kb" }),
   payChanguWebhookRouter,
+);
+app.use(
+  "/api/v1/payments/paychangu/return",
+  payChanguReturnRouter,
 );
 app.use(
   express.json({

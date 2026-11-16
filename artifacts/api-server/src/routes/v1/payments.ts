@@ -13,6 +13,17 @@ import {
 
 const router = Router();
 export const payChanguWebhookRouter = Router();
+export const payChanguReturnRouter = Router();
+
+payChanguReturnRouter.get("/success", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.redirect(302, "chikondi265://payment-success");
+});
+
+payChanguReturnRouter.get("/failure", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.redirect(302, "chikondi265://payment-failed");
+});
 
 router.post(
   "/connections/:id/payment-intents",

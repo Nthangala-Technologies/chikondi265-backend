@@ -17,18 +17,58 @@ type CheckoutResponse = {
 };
 
 function getSafeProviderMessage(value: unknown): string | null {
-  if (!value || typeof value !== "object" || !("message" in value)) {
-    return null;
+  if (!value || typeof value !== "object") return null;
+
+  if ("message" in value) {
+    const message = (value as { message?: unknown }).message;
+    if (typeof message === "string") {
+      return message
+        .replace(
+          /\b(authorization|secret|token|api[_ -]?key)\b\s*[:=]\s*\S+/gi,
+          "$1=[redacted]",
+        )
+        .slice(0, 200);
+    }
   }
 
-  const message = (value as { message?: unknown }).message;
-  if (typeof message !== "string") return null;
-  return message
-    .replace(
-      /\b(authorization|secret|token|api[_ -]?key)\b\s*[:=]\s*\S+/gi,
-      "$1=[redacted]",
-    )
-    .slice(0, 200);
+  if (!("errors" in value)) return null;
+  const errors = (value as { errors?: unknown }).errors;
+  if (!errors || typeof errors !== "object" || Array.isArray(errors)) {
+    return null;
+  }
+  const fields = Object.keys(errors).slice(0, 5);
+  return fields.length
+    ? `Provider validation failed for: ${fields.join(", ")}`
+    : null;
+}
+
+function getPaymentRedirectUrls(): { callbackUrl: string; returnUrl: string } {
+  let webhookUrl: URL;
+  try {
+    webhookUrl = new URL(process.env.PAYCHANGU_WEBHOOK_URL ?? "");
+  } catch {
+    throw new PayChanguProviderError(
+      "PAYCHANGU_WEBHOOK_URL must be a valid HTTPS URL.",
+      503,
+    );
+  }
+  if (webhookUrl.protocol !== "https:") {
+    throw new PayChanguProviderError(
+      "PAYCHANGU_WEBHOOK_URL must use HTTPS.",
+      503,
+    );
+  }
+
+  return {
+    callbackUrl: new URL(
+      "/api/v1/payments/paychangu/return/success",
+      webhookUrl.origin,
+    ).toString(),
+    returnUrl: new URL(
+      "/api/v1/payments/paychangu/return/failure",
+      webhookUrl.origin,
+    ).toString(),
+  };
 }
 
 export async function createPayChanguCheckout(input: {
@@ -43,6 +83,8 @@ export async function createPayChanguCheckout(input: {
     );
   }
 
+  const { callbackUrl, returnUrl } = getPaymentRedirectUrls();
+
   let response: Response;
   try {
     response = await fetch("https://api.paychangu.com/payment", {
@@ -56,8 +98,8 @@ export async function createPayChanguCheckout(input: {
         amount: String(input.amountMwk),
         currency: "MWK",
         tx_ref: input.txRef,
-        callback_url: "chikondi265://payment-success",
-        return_url: "chikondi265://payment-failed",
+        callback_url: callbackUrl,
+        return_url: returnUrl,
       }),
       signal: AbortSignal.timeout(15_000),
     });
