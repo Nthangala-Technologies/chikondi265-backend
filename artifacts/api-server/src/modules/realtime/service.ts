@@ -1,11 +1,12 @@
-import { Rest } from "ably";
+import { createHttpClient } from "@ably/pubsub-server";
 import { ApiError } from "../../middleware/error-handler";
 
 const userChannel = (userId: string) => `user:${userId}`;
-let restClient: Rest | null = null;
+type AblyHttpClient = ReturnType<typeof createHttpClient>;
+let ablyHttpClient: AblyHttpClient | null = null;
 let configuredKey: string | null = null;
 
-function getRestClient() {
+function getAblyHttpClient() {
   const key = process.env.ABLY_API_KEY;
   if (!key) {
     throw new ApiError(
@@ -15,16 +16,16 @@ function getRestClient() {
     );
   }
 
-  if (!restClient || configuredKey !== key) {
+  if (!ablyHttpClient || configuredKey !== key) {
     configuredKey = key;
-    restClient = new Rest({ key });
+    ablyHttpClient = createHttpClient({ key });
   }
-  return restClient;
+  return ablyHttpClient;
 }
 
 export async function createRealtimeTokenRequest(userId: string) {
   const channel = userChannel(userId);
-  return getRestClient().auth.createTokenRequest({
+  return getAblyHttpClient().auth.createTokenRequest({
     clientId: userId,
     ttl: 60 * 60 * 1000,
     capability: { [channel]: ["subscribe"] },
@@ -35,7 +36,7 @@ export async function publishUserDataUpdates(userIds: string[]) {
   if (!process.env.ABLY_API_KEY) return;
 
   try {
-    const client = getRestClient();
+    const client = getAblyHttpClient();
     const recipients = [...new Set(userIds.filter(Boolean))];
     const results = await Promise.allSettled(
       recipients.map((userId) =>
