@@ -34,28 +34,11 @@ function getSafeProviderMessage(value: unknown): string | null {
 export async function createPayChanguCheckout(input: {
   amountMwk: number;
   txRef: string;
-  callbackUrl: string;
 }): Promise<string> {
   const secretKey = process.env.PAYCHANGU_SECRET_KEY;
   if (!secretKey) {
     throw new PayChanguProviderError(
       "PAYCHANGU_SECRET_KEY is not configured.",
-      503,
-    );
-  }
-
-  let callbackUrl: URL;
-  try {
-    callbackUrl = new URL(input.callbackUrl);
-  } catch {
-    throw new PayChanguProviderError(
-      "PAYCHANGU_WEBHOOK_URL is not a valid URL.",
-      503,
-    );
-  }
-  if (callbackUrl.protocol !== "https:") {
-    throw new PayChanguProviderError(
-      "PAYCHANGU_WEBHOOK_URL must use HTTPS.",
       503,
     );
   }
@@ -73,7 +56,8 @@ export async function createPayChanguCheckout(input: {
         amount: String(input.amountMwk),
         currency: "MWK",
         tx_ref: input.txRef,
-        callback_url: callbackUrl.toString(),
+        callback_url: "chikondi265://payment-success",
+        return_url: "chikondi265://payment-failed",
       }),
       signal: AbortSignal.timeout(15_000),
     });

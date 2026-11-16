@@ -50,7 +50,6 @@ export async function createPaymentIntent(input: {
       checkoutUrl = await createPayChanguCheckout({
         amountMwk: 5000,
         txRef: attempt.txRef,
-        callbackUrl: process.env.PAYCHANGU_WEBHOOK_URL ?? "",
       });
     } catch (error) {
       if (error instanceof PayChanguProviderError) {
