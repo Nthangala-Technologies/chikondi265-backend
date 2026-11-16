@@ -23,6 +23,11 @@ router.post("/swipes", async (req, res, next): Promise<void> => {
     );
     res.json(RecordSwipeResponse.parse(result));
   } catch (error) {
+    console.error("[swipes] Swipe transaction failed", {
+      requestId: String(req.id ?? ""),
+      targetUserId: parsed.data.targetUserId,
+      error,
+    });
     next(error);
   }
 });
