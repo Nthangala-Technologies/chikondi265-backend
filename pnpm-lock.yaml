@@ -240,6 +240,9 @@ importers:
 
   artifacts/kupeza-wachikondi-mobile:
     dependencies:
+      '@ably/pubsub-device':
+        specifier: 3.1.0
+        version: 3.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@expo-google-fonts/inter':
         specifier: ^0.4.0
         version: 0.4.2
@@ -270,6 +273,9 @@ importers:
       expo-constants:
         specifier: ~58.0.15
         version: 58.0.15(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))(typescript@6.0.3)
+      expo-file-system:
+        specifier: ~58.0.13
+        version: 58.0.13(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))
       expo-font:
         specifier: ~58.0.11
         version: 58.0.11(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
@@ -313,8 +319,8 @@ importers:
         specifier: ~58.0.7
         version: 58.0.7(expo@58.0.23)(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))
       expo-web-browser:
-        specifier: ~58.0.7
-        version: 58.0.7(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))
+        specifier: ~58.0.8
+        version: 58.0.8(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -623,12 +629,21 @@ packages:
       typescript:
         optional: true
 
-  '@ably/msgpack-js@0.4.1':
-    resolution: {integrity: sha512-Sjxj6SOr17hExAVrsycN7u6oV4PhZcK7Z2S8dM71CH/butgO47cSo/TL6FJPCXUyDAzKkOWjMUpJGyZkEpyu4Q==}
-
   '@ably/pubsub-core@3.1.0':
     resolution: {integrity: sha512-cj234Tq76mpilXEKHbaSYlorJnVB7DFILuZLryWG2X8OBq0KLI3pq7Q+ctfbDVafkDOPEzRyhRJSc0cjJVG5Bg==}
     engines: {node: '>=22'}
+
+  '@ably/pubsub-device@3.1.0':
+    resolution: {integrity: sha512-/JiLB3+tS2zppSqIHFUHqiaMqpao83tMVRdcqrK7KxsnaLn4X7B66B2J2PXVBoJDxUFv+0x1AD2l+xncblWqNA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
 
   '@ably/pubsub-server@3.1.0':
     resolution: {integrity: sha512-WN3tRmzOaVtJB7+o586W13lCORVXyLZbG/dDEFi+ASjKiByK5VasCmwoadXzIAZ/47z2lgoDaRKM2zPL02NGEg==}
@@ -2463,18 +2478,6 @@ packages:
     resolution: {integrity: sha512-5AXjrcMClTryPe9LgZrygpB1lj7s0S9E0+W+AHaVKAVyHanafK86iPSvG5xHVSp/jC+VH1UXu0TAEmY279xH7A==}
     engines: {node: '>=14.6'}
 
-  ably@2.30.0:
-    resolution: {integrity: sha512-67zEe/PF1yNoAxTuydAvi/nMtUWDeRca8FYsAiWi0Gyko3pp7vw/hGNOAQ38HVRohGsR2iimdNJ8NtSF8Tl2Dg==}
-    engines: {node: '>=16'}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
-
   accepts@1.3.8:
     resolution: {integrity: sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==}
     engines: {node: '>= 0.6'}
@@ -2608,10 +2611,6 @@ packages:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
 
-  base64-js@1.0.2:
-    resolution: {integrity: sha512-ZXBDPMt/v/8fsIqn+Z5VwrhdR6jVka0bYobHdGia0Nxi7BJ9i/Uvml3AocHIBtIIBhZjBw5MR0aR4ROs/8+SNg==}
-    engines: {node: '>= 0.4'}
-
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
 
@@ -2630,9 +2629,6 @@ packages:
 
   boolbase@1.0.0:
     resolution: {integrity: sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww==}
-
-  bops@1.0.1:
-    resolution: {integrity: sha512-qCMBuZKP36tELrrgXpAfM+gHzqa0nLsWZ+L37ncsb8txYlnAoxOPpVp+g7fK0sGkMXfA0wl8uQkESqw3v4HNag==}
 
   bplist-creator@0.1.0:
     resolution: {integrity: sha512-sXaHZicyEEmY86WyueLTQesbeoH/mquvarJaQNbjuOQO+7gbFcDEWqKmcWA4cOTLzFlfgvkiVxolk1k5bBIpmg==}
@@ -3418,8 +3414,8 @@ packages:
       react-native-web:
         optional: true
 
-  expo-web-browser@58.0.7:
-    resolution: {integrity: sha512-dQ2/lkw+GR0+5xG6L2cixH+Zk7tY0IeWGhS2PRw+JIPDbqU+8eAb3F0twB7vMFBls4B/DdaLYoEj/hhq7msLHQ==}
+  expo-web-browser@58.0.8:
+    resolution: {integrity: sha512-x/+50mE/F9QtZtCqLEW+fry82IesI1DBKpN2jy8zUnN1bt1J7wGzs3vq5f3riiBVMFEPnajrGVaTKk7CKE1xKw==}
     peerDependencies:
       expo: '*'
       react-native: '*'
@@ -4982,9 +4978,6 @@ packages:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
 
-  to-utf8@0.0.1:
-    resolution: {integrity: sha512-zks18/TWT1iHO3v0vFp5qLKOG27m67ycq/Y7a7cTiRuUNlc4gf3HGnkRgMv0NyhnfTamtkYBJl+YeD1/j07gBQ==}
-
   toidentifier@1.0.1:
     resolution: {integrity: sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==}
     engines: {node: '>=0.6'}
@@ -5211,18 +5204,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.22.0:
-    resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.22.2:
     resolution: {integrity: sha512-/rEZ2ejown2N5gxVTHUu9bVVC7ttu0/Tgzf5hbTOixR3Fs7mbbXgn2DbdbcKgJOmpQMtrIUWivtYuVMnp/W/yA==}
     engines: {node: '>=10.0.0'}
@@ -5308,11 +5289,22 @@ snapshots:
     optionalDependencies:
       typescript: 6.0.3
 
-  '@ably/msgpack-js@0.4.1':
-    dependencies:
-      bops: 1.0.1
-
   '@ably/pubsub-core@3.1.0': {}
+
+  '@ably/pubsub-device@3.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      '@ably/pubsub-core': 3.1.0
+      dequal: 2.0.3
+      fastestsmallesttextencoderdecoder: 1.0.22
+      got: 11.8.6
+      ulid: 2.4.0
+      ws: 8.22.2
+    optionalDependencies:
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@ably/pubsub-server@3.1.0':
     dependencies:
@@ -5845,7 +5837,7 @@ snapshots:
       '@expo/router-server': 58.0.21(@expo/metro-runtime@58.0.17)(expo-constants@58.0.15)(expo-font@58.0.11)(expo-router@58.0.30)(expo-server@58.0.6)(expo@58.0.23)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@expo/schema-utils': 58.0.3
       '@expo/spawn-async': 1.8.0
-      '@expo/ws-tunnel': 2.0.1(ws@8.22.0)
+      '@expo/ws-tunnel': 2.0.1(ws@8.22.2)
       '@expo/xcpretty': 4.4.7
       '@react-native/asset-utils': 0.88.1
       '@react-native/dev-middleware': 0.88.1
@@ -5884,7 +5876,7 @@ snapshots:
       terminal-link: 2.1.1
       toqr: 0.1.1
       wrap-ansi: 7.0.0
-      ws: 8.22.0
+      ws: 8.22.2
     optionalDependencies:
       expo-router: 58.0.30(4a5de5af5a154f034e2dacd6805becdb)
       react-native: 0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0)
@@ -6205,9 +6197,9 @@ snapshots:
       react: 19.3.0
       react-native: 0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0)
 
-  '@expo/ws-tunnel@2.0.1(ws@8.22.0)':
+  '@expo/ws-tunnel@2.0.1(ws@8.22.2)':
     dependencies:
-      ws: 8.22.0
+      ws: 8.22.2
 
   '@expo/xcpretty@4.4.7':
     dependencies:
@@ -7621,18 +7613,6 @@ snapshots:
 
   '@xmldom/xmldom@0.9.12': {}
 
-  ably@2.30.0:
-    dependencies:
-      '@ably/msgpack-js': 0.4.1
-      dequal: 2.0.3
-      fastestsmallesttextencoderdecoder: 1.0.22
-      got: 11.8.6
-      ulid: 2.4.0
-      ws: 8.22.2
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
   accepts@1.3.8:
     dependencies:
       mime-types: 2.1.35
@@ -7801,8 +7781,6 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  base64-js@1.0.2: {}
-
   base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.11.28: {}
@@ -7824,11 +7802,6 @@ snapshots:
       - supports-color
 
   boolbase@1.0.0: {}
-
-  bops@1.0.1:
-    dependencies:
-      base64-js: 1.0.2
-      to-utf8: 0.0.1
 
   bplist-creator@0.1.0:
     dependencies:
@@ -8518,7 +8491,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  expo-web-browser@58.0.7(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0)):
+  expo-web-browser@58.0.8(expo@58.0.23)(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0)):
     dependencies:
       expo: 58.0.23(@babel/core@7.29.7)(@expo/metro-runtime@58.0.17)(expo-router@58.0.30)(react-dom@19.3.0(react@19.3.0))(react-native-web@0.21.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)(typescript@6.0.3)
       react-native: 0.88.1(@babel/core@7.29.7)(@types/react@19.3.0)(react@19.3.0)
@@ -10226,8 +10199,6 @@ snapshots:
     dependencies:
       is-number: 7.0.0
 
-  to-utf8@0.0.1: {}
-
   toidentifier@1.0.1: {}
 
   toqr@0.1.1: {}
@@ -10395,8 +10366,6 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@7.5.13: {}
-
-  ws@8.22.0: {}
 
   ws@8.22.2: {}
 
