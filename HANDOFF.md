@@ -381,3 +381,8 @@ Configure a non-secret `EXPO_PUBLIC_API_BASE_URL` for the mobile client and set 
 - Chat bubbles now align by sender; new messages fade in, pending messages pulse, and failed sends shake before their optimistic entry is removed. The chat actions sheet springs into view, and primary controls use press-scale feedback.
 - Added Like and Block actions to search-result details. The shared client logger now suppresses expected aborted/cancelled request noise. The status bar already followed the selected theme.
 - **Verification:** `pnpm -w run typecheck` passed after restarting the Expo workflow. The unauthenticated browser screenshot shows the sign-in screen; signed-in screens and native-device interactions were not visually tested. No backend routes, database, auth logic, payment code, or new dependencies were changed.
+
+## 2026-11-17 — Theme-aware system bars
+
+- Kept the root Expo status-bar style tied to the resolved theme, and gave the Android app root and any displayed stack header theme-matched background/text colors. The app's navigation header remains hidden by default.
+- **Verification:** `pnpm -w run typecheck` passed and Expo restarted. Native light/dark status-bar visibility was not directly tested on a device.

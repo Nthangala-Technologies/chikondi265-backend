@@ -39,6 +39,7 @@ import { AuthProvider, getStoredSessionToken, useAuth } from '@/components/AuthP
 import { ErrorModalProvider } from '@/components/ErrorModal';
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { API_BASE_URL } from '@/constants/config';
+import { useColors } from '@/hooks/useColors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -113,6 +114,7 @@ async function logApiReachability() {
 
 function RootLayoutNav() {
   const { status, account } = useAuth();
+  const colors = useColors();
   const pathname = usePathname();
   const launchPath = useRef(pathname);
   const params = useGlobalSearchParams();
@@ -280,6 +282,8 @@ function RootLayoutNav() {
       screenOptions={{
         headerBackButtonDisplayMode: 'minimal',
         headerShown: false,
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.foreground,
         animation: 'slide_from_right',
         animationDuration: 280,
         gestureEnabled: true,
@@ -394,24 +398,31 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <KeyboardProvider>
-            <ThemeProvider>
-              <ThemeStatusBar />
-              <ErrorBoundary>
-                <AuthProvider>
-                  <AppProvider>
-                    <ErrorModalProvider>
-                      <RootLayoutNav />
-                    </ErrorModalProvider>
-                  </AppProvider>
-                </AuthProvider>
-              </ErrorBoundary>
-            </ThemeProvider>
-          </KeyboardProvider>
-        </GestureHandlerRootView>
+        <ThemeProvider>
+          <ThemedAppRoot />
+        </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
+  );
+}
+
+function ThemedAppRoot() {
+  const colors = useColors();
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <KeyboardProvider>
+        <ThemeStatusBar />
+        <ErrorBoundary>
+          <AuthProvider>
+            <AppProvider>
+              <ErrorModalProvider>
+                <RootLayoutNav />
+              </ErrorModalProvider>
+            </AppProvider>
+          </AuthProvider>
+        </ErrorBoundary>
+      </KeyboardProvider>
+    </GestureHandlerRootView>
   );
 }
 
