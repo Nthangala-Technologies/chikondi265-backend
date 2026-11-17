@@ -78,10 +78,7 @@ export function UnlockChatButton({
         ? rawCheckoutUrl
         : `https://${rawCheckoutUrl.replace(/^\/+/, '')}`;
       const checkoutUrl = new URL(secureCheckoutUrl);
-      if (
-        !['https:', 'http:'].includes(checkoutUrl.protocol) ||
-        checkoutUrl.hostname !== 'checkout.paychangu.com'
-      ) {
+      if (!['https:', 'http:'].includes(checkoutUrl.protocol)) {
         throw new Error('The checkout link is not secure.');
       }
       if (checkoutUrl.protocol === 'http:') {
@@ -90,11 +87,8 @@ export function UnlockChatButton({
           { origin: checkoutUrl.origin, path: checkoutUrl.pathname },
         );
       }
-      console.info('[payments] Opening PayChangu checkout', {
-        origin: checkoutUrl.origin,
-        path: checkoutUrl.pathname,
-        hasQuery: checkoutUrl.search.length > 0,
-      });
+      // Checkout URLs can contain one-time payment tokens; log only the origin.
+      console.log("OPENING PAYMENT URL:", checkoutUrl.origin);
       await WebBrowser.openBrowserAsync(checkoutUrl.toString());
       await refreshConnections();
     } catch (error) {
