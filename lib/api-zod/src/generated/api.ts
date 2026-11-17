@@ -618,6 +618,11 @@ export const GetConnectionsResponseItem = zod.object({
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
   "photoUrl": zod.string().nullish()
+}),zod.null()]),
+  "lastMessage": zod.union([zod.object({
+  "body": zod.string(),
+  "senderUserId": zod.string().uuid(),
+  "createdAt": zod.string().datetime({"offset":true})
 }),zod.null()])
 })
 export const GetConnectionsResponse = zod.array(GetConnectionsResponseItem)
@@ -651,6 +656,11 @@ export const GetConnectionResponse = zod.object({
   "verificationStatus": zod.enum(['unverified', 'pending', 'verified', 'rejected']),
   "photoId": zod.enum(['woman-01', 'woman-02', 'woman-03', 'man-01', 'man-02', 'man-03']),
   "photoUrl": zod.string().nullish()
+}),zod.null()]),
+  "lastMessage": zod.union([zod.object({
+  "body": zod.string(),
+  "senderUserId": zod.string().uuid(),
+  "createdAt": zod.string().datetime({"offset":true})
 }),zod.null()])
 })
 

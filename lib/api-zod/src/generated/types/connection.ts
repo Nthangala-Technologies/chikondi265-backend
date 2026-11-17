@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ConnectionMessagePreview } from './connectionMessagePreview';
 import type { ConnectionStatus } from './connectionStatus';
 import type { PublicProfile } from './publicProfile';
 
@@ -15,4 +16,5 @@ export interface Connection {
   /** @nullable */
   chatEnabledAt: string | null;
   otherProfile: PublicProfile | null;
+  lastMessage: ConnectionMessagePreview | null;
 }

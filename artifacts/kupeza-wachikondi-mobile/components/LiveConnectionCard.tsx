@@ -5,6 +5,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { UnlockChatButton } from '@/components/UnlockChatButton';
 import { defaultAvatarForUser } from '@/components/AppProvider';
+import { useAuth } from '@/components/AuthProvider';
 import { PhotoAvatar } from '@/components/ui';
 import { useColors } from '@/hooks/useColors';
 
@@ -15,9 +16,15 @@ type Props = {
 
 export function LiveConnectionCard({ connection, mode }: Props) {
   const colors = useColors();
+  const { account } = useAuth();
   const profile = connection.otherProfile;
   const chatEnabled = connection.chatEnabledAt !== null;
   const name = profile?.displayName ?? 'Profile unavailable';
+  const messagePreview = connection.lastMessage
+    ? connection.lastMessage.senderUserId === account?.userId
+      ? `You: ${connection.lastMessage.body}`
+      : connection.lastMessage.body
+    : null;
 
   const content = (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -33,10 +40,14 @@ export function LiveConnectionCard({ connection, mode }: Props) {
       )}
       <View style={styles.copy}>
         <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{name}</Text>
-        <Text style={[styles.status, { color: colors.mutedForeground }]}>
+        <Text
+          style={[styles.status, { color: colors.mutedForeground }]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
           {mode === 'messages'
             ? chatEnabled
-              ? 'No messages yet'
+              ? messagePreview ?? 'No messages yet'
               : 'Unlock chat — MWK 5,000'
             : chatEnabled
               ? 'Chat unlocked'

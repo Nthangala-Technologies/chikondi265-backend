@@ -536,6 +536,12 @@ export const ConnectionStatus = {
   closed: 'closed',
 } as const;
 
+export interface ConnectionMessagePreview {
+  body: string;
+  senderUserId: string;
+  createdAt: string;
+}
+
 export interface Connection {
   id: string;
   status: ConnectionStatus;
@@ -543,6 +549,7 @@ export interface Connection {
   /** @nullable */
   chatEnabledAt: string | null;
   otherProfile: PublicProfile | null;
+  lastMessage: ConnectionMessagePreview | null;
 }
 
 export interface CreateConnectionMessageInput {

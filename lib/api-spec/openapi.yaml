@@ -1597,12 +1597,17 @@ components:
           anyOf:
             - $ref: "#/components/schemas/PublicProfile"
             - type: "null"
+        lastMessage:
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionMessagePreview"
+            - type: "null"
       required:
         - id
         - status
         - matchedAt
         - chatEnabledAt
         - otherProfile
+        - lastMessage
     CreateConnectionMessageInput:
       type: object
       additionalProperties: false
@@ -1640,6 +1645,19 @@ components:
           type: ["string", "null"]
           format: date-time
       required: [id, connectionId, senderUserId, clientMessageId, body, createdAt, readAt]
+    ConnectionMessagePreview:
+      type: object
+      additionalProperties: false
+      properties:
+        body:
+          type: string
+        senderUserId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+      required: [body, senderUserId, createdAt]
     ConnectionMessagePage:
       type: object
       additionalProperties: false

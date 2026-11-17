@@ -16,6 +16,7 @@ export * from './changePasswordResponse';
 export * from './connection';
 export * from './connectionMessage';
 export * from './connectionMessagePage';
+export * from './connectionMessagePreview';
 export * from './connectionStatus';
 export * from './createBlockInput';
 export * from './createConnectionMessageInput';
