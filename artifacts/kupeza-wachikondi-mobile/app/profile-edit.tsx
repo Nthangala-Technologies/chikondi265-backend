@@ -18,6 +18,7 @@ import {
   normalizeDistrict,
 } from '@/components/AnimatedDistrictPickerField';
 import { useAuth } from '@/components/AuthProvider';
+import { friendlyApiError, useErrorModal } from '@/components/ErrorModal';
 import { useColors } from '@/hooks/useColors';
 import { isIntention, type Intention } from '@/utils/intentions';
 
@@ -84,6 +85,7 @@ function firstFieldError(errors: Record<string, string[]>, field: string) {
 export default function ProfileEditScreen() {
   const colors = useColors();
   const auth = useAuth();
+  const { showError } = useErrorModal();
   const queryClient = useQueryClient();
   const profile = auth.account?.profile;
   const saveProfile = useSaveCurrentUserProfile();
@@ -144,9 +146,9 @@ export default function ProfileEditScreen() {
       if (apiError?.fieldErrors) {
         setFieldErrors(apiError.fieldErrors);
       }
-      Alert.alert(
+      showError(
+        friendlyApiError(error, 'We couldn’t save your profile. Check your connection and try again.'),
         'Could not save profile',
-        apiError?.message ?? 'Check your connection and try again.',
       );
     }
   }

@@ -36,6 +36,7 @@ import {
 } from '@workspace/api-client-react';
 import { AppProvider } from '@/components/AppProvider';
 import { AuthProvider, getStoredSessionToken, useAuth } from '@/components/AuthProvider';
+import { ErrorModalProvider } from '@/components/ErrorModal';
 import { API_BASE_URL } from '@/constants/config';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -276,7 +277,7 @@ function RootLayoutNav() {
   return (
     <Stack
       screenOptions={{
-        headerBackTitle: 'Back',
+        headerBackButtonDisplayMode: 'minimal',
         headerShown: false,
         animation: 'slide_from_right',
         animationDuration: 280,
@@ -389,5 +390,5 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
-  return <SafeAreaProvider><StatusBar style="dark" /><ErrorBoundary><QueryClientProvider client={queryClient}><GestureHandlerRootView style={{ flex: 1 }}><KeyboardProvider><AuthProvider><AppProvider><RootLayoutNav /></AppProvider></AuthProvider></KeyboardProvider></GestureHandlerRootView></QueryClientProvider></ErrorBoundary></SafeAreaProvider>;
+  return <SafeAreaProvider><StatusBar style="dark" /><ErrorBoundary><QueryClientProvider client={queryClient}><GestureHandlerRootView style={{ flex: 1 }}><KeyboardProvider><AuthProvider><AppProvider><ErrorModalProvider><RootLayoutNav /></ErrorModalProvider></AppProvider></AuthProvider></KeyboardProvider></GestureHandlerRootView></QueryClientProvider></ErrorBoundary></SafeAreaProvider>;
 }

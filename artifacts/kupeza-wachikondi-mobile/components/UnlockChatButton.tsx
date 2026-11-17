@@ -9,12 +9,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
+import { friendlyApiError, useErrorModal } from '@/components/ErrorModal';
 import { useColors } from '@/hooks/useColors';
 
 type Props = {
@@ -35,6 +35,7 @@ export function UnlockChatButton({
   testID,
 }: Props) {
   const colors = useColors();
+  const { showError } = useErrorModal();
   const queryClient = useQueryClient();
   const paymentIntent = useCreatePaymentIntent();
   const [openingCheckout, setOpeningCheckout] = useState(false);
@@ -74,27 +75,21 @@ export function UnlockChatButton({
         data: {},
       });
       const rawCheckoutUrl = result.checkoutUrl.trim();
-      const secureCheckoutUrl = /^https?:\/\//i.test(rawCheckoutUrl)
+      const finalUrl = rawCheckoutUrl.startsWith('http')
         ? rawCheckoutUrl
-        : `https://${rawCheckoutUrl.replace(/^\/+/, '')}`;
-      const checkoutUrl = new URL(secureCheckoutUrl);
-      if (!['https:', 'http:'].includes(checkoutUrl.protocol)) {
-        throw new Error('The checkout link is not secure.');
-      }
-      if (checkoutUrl.protocol === 'http:') {
-        console.warn(
-          '[payments] PayChangu returned an HTTP checkout URL; continuing with the sandbox link.',
-          { origin: checkoutUrl.origin, path: checkoutUrl.pathname },
-        );
-      }
-      // Checkout URLs can contain one-time payment tokens; log only the origin.
-      console.log("OPENING PAYMENT URL:", checkoutUrl.origin);
-      await WebBrowser.openBrowserAsync(checkoutUrl.toString());
+        : `https://${rawCheckoutUrl}`;
+      // Do not log one-time checkout query values; they can authorize a payment session.
+      const safeLogUrl = finalUrl.replace(/([?&][^=#]+)=([^&#]*)/g, '$1=[redacted]');
+      console.log('OPENING PAYMENT URL:', safeLogUrl);
+      await WebBrowser.openBrowserAsync(finalUrl);
       await refreshConnections();
     } catch (error) {
-      Alert.alert(
+      showError(
+        friendlyApiError(
+          error,
+          'We couldn’t open checkout. Check your connection and try again.',
+        ),
         'Unable to unlock chat',
-        error instanceof Error ? error.message : 'Please try again.',
       );
     } finally {
       setOpeningCheckout(false);

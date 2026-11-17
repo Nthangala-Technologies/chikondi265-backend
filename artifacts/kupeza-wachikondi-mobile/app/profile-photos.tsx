@@ -23,9 +23,11 @@ import { getStoredSessionToken, useAuth } from '@/components/AuthProvider';
 import { API_BASE_URL } from '@/constants/config';
 import { Header, imageFor, Shell } from '@/components/ui';
 import { useColors } from '@/hooks/useColors';
+import { useErrorModal } from '@/components/ErrorModal';
 
 export default function ProfilePhotosScreen() {
   const colors = useColors();
+  const { showError } = useErrorModal();
   const { width: windowWidth } = useWindowDimensions();
   const queryClient = useQueryClient();
   const { account, refreshAccount } = useAuth();
@@ -70,9 +72,9 @@ export default function ProfilePhotosScreen() {
       ]);
       router.back();
     } catch {
-      Alert.alert(
+      showError(
+        'We couldn’t update your photo. Check your connection and try again.',
         'Photo not updated',
-        'Check your connection and try selecting the portrait again.',
       );
     } finally {
       setSaving(null);

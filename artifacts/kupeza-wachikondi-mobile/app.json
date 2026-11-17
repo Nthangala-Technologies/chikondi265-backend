@@ -5,6 +5,7 @@
     "owner": "symon265",
     "version": "1.0.0",
     "orientation": "portrait",
+    "jsEngine": "hermes",
     "icon": "./assets/images/icon_2.png",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -17,6 +18,8 @@
     },
     "android": {
       "package": "com.anonymous.kupezawachikondimobile",
+      "enableProguardInReleaseBuilds": true,
+      "enableShrinkResources": true,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_MEDIA_IMAGES",

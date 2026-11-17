@@ -10,15 +10,11 @@ import {
 import { router } from 'expo-router';
 import { Button, Header, Shell } from '@/components/ui';
 import { useColors } from '@/hooks/useColors';
-
-function apiMessage(error: unknown, fallback: string) {
-  return (
-    error as { data?: { error?: { message?: string } } }
-  )?.data?.error?.message ?? fallback;
-}
+import { friendlyApiError, useErrorModal } from '@/components/ErrorModal';
 
 export default function PasswordChangeScreen() {
   const colors = useColors();
+  const { showError } = useErrorModal();
   const changePassword = useChangeCurrentPassword();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -45,9 +41,9 @@ export default function PasswordChangeScreen() {
         [{ text: 'Done', onPress: () => router.back() }],
       );
     } catch (error) {
-      Alert.alert(
+      showError(
+        friendlyApiError(error, 'We couldn’t update your password. Check your connection and try again.'),
         'Could not update password',
-        apiMessage(error, 'Check your connection and try again.'),
       );
     }
   }

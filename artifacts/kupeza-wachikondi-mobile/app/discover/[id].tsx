@@ -10,13 +10,14 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Alert, Animated, BackHandler, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, BackHandler, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Chip, imageFor } from '@/components/ui';
 import { useColors } from '@/hooks/useColors';
+import { useErrorModal } from '@/components/ErrorModal';
 import { toMobileProfile } from '@/utils/live-profile';
 
 const cardShadowStyle = Platform.select({
@@ -32,6 +33,7 @@ const cardShadowStyle = Platform.select({
 
 export default function ProfileDetail() {
   const colors = useColors();
+  const { showError } = useErrorModal();
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { id, origin } = useLocalSearchParams<{ id: string; origin?: string }>();
@@ -80,7 +82,7 @@ export default function ProfileDetail() {
         return;
       }
       if (router.canGoBack()) router.back();
-      else router.replace('/(tabs)');
+      else router.push('/(tabs)');
     });
   }, [progress]);
 
@@ -148,7 +150,7 @@ export default function ProfileDetail() {
           ]);
           closeProfile();
         },
-        onError: () => Alert.alert('Like not saved', 'Check your connection and try again.'),
+        onError: () => showError('We couldn’t save your like. Check your connection and try again.', 'Like not saved'),
       },
     );
   };
@@ -167,7 +169,7 @@ export default function ProfileDetail() {
           ]);
           closeProfile();
         },
-        onError: () => Alert.alert('Could not block this profile', 'Check your connection and try again.'),
+        onError: () => showError('We couldn’t block this profile. Check your connection and try again.', 'Profile not blocked'),
       },
     );
   };

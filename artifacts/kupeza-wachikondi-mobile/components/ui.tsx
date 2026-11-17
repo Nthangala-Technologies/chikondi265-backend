@@ -32,7 +32,7 @@ export function Brand({ light = false }: { light?: boolean }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={light ? 'Chikondi265 App' : 'Go to home'}
-      onPress={() => router.replace('/(tabs)')}
+      onPress={() => router.push('/(tabs)')}
       style={styles.brand}
     >
       <Image

@@ -14,7 +14,8 @@ import { ActivityIndicator, FlatList, Keyboard, Pressable, StyleSheet, Text, Tex
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useLocalSearchParams } from 'expo-router';
 import { useApp, getProfile, ChatMessage } from '@/components/AppProvider';
-import { getStoredSessionToken } from '@/components/AuthProvider';
+import { getStoredSessionToken, useAuth } from '@/components/AuthProvider';
+import { friendlyApiError, useErrorModal } from '@/components/ErrorModal';
 import { Avatar, Header, Shell } from '@/components/ui';
 import { UnlockChatButton } from '@/components/UnlockChatButton';
 import { API_BASE_URL, USE_LIVE_API } from '@/constants/config';
@@ -26,6 +27,8 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const { matchId } = useLocalSearchParams<{ matchId: string }>();
   const { matches, chats, sendMessage } = useApp();
+  const { account } = useAuth();
+  const { showError } = useErrorModal();
   const queryClient = useQueryClient();
   const connectionQuery = useGetConnection(matchId ?? '', {
     query: { enabled: USE_LIVE_API && Boolean(matchId) },
@@ -33,14 +36,13 @@ export default function ChatScreen() {
   const chatEnabled = Boolean(
     USE_LIVE_API && matchId && connectionQuery.data?.chatEnabledAt,
   );
-  const [socketConnected, setSocketConnected] = useState(false);
+  const [socketFallbackActive, setSocketFallbackActive] = useState(false);
   const [sending, setSending] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
   const messagesQuery = useGetConnectionMessages(matchId ?? '', {
     query: {
       enabled: chatEnabled,
-      refetchInterval: chatEnabled && !socketConnected ? 5_000 : false,
+      refetchInterval: chatEnabled && socketFallbackActive ? 5_000 : false,
     },
   });
   const [text, setText] = useState('');
@@ -55,12 +57,21 @@ export default function ChatScreen() {
       queryClient.setQueryData<ConnectionMessagePage>(
         getGetConnectionMessagesQueryKey(conversationId),
         (current) => {
-          if (!current || current.items.some((item) => item.id === message.id)) {
-            return current;
-          }
+          const items = current?.items ?? [];
+          const existingIndex = items.findIndex(
+            (item) =>
+              item.id === message.id ||
+              item.clientMessageId === message.clientMessageId,
+          );
+          const nextItems =
+            existingIndex >= 0
+              ? items.map((item, index) =>
+                  index === existingIndex ? message : item,
+                )
+              : [...items, message];
           return {
-            ...current,
-            items: [...current.items, message]
+            nextCursor: current?.nextCursor ?? null,
+            items: nextItems
               .sort(
                 (left, right) =>
                   new Date(right.createdAt).getTime() -
@@ -76,60 +87,81 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!chatEnabled || !conversationId || !API_BASE_URL) {
-      setSocketConnected(false);
+      setSocketFallbackActive(false);
       return;
     }
 
     let active = true;
     let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+    let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
     let socket: WebSocket | undefined;
     let retryDelay = 1_000;
-
-    const connect = async () => {
-      const token = await getStoredSessionToken();
-      if (!active || !token) return;
-
-      const endpoint = new URL('/ws', API_BASE_URL);
-      endpoint.protocol = endpoint.protocol === 'https:' ? 'wss:' : 'ws:';
-      endpoint.searchParams.set('token', token);
-      endpoint.searchParams.set('connectionId', conversationId);
-      socket = new WebSocket(endpoint.toString());
-
-      socket.onopen = () => {
-        retryDelay = 1_000;
-        setSocketConnected(true);
-      };
-      socket.onmessage = (event) => {
-        try {
-          const frame = JSON.parse(String(event.data)) as {
-            type?: string;
-            message?: ConnectionMessage;
-          };
-          if (frame.type === 'message' && frame.message) {
-            appendMessage(frame.message);
-          }
-        } catch {
-          // Ignore malformed frames; HTTP polling remains available.
-        }
-      };
-      socket.onerror = () => setSocketConnected(false);
-      socket.onclose = () => {
-        setSocketConnected(false);
-        if (active) {
-          reconnectTimer = setTimeout(() => {
-            retryDelay = Math.min(retryDelay * 2, 30_000);
-            void connect();
-          }, retryDelay);
-        }
-      };
+    const startPollingFallback = () => {
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      fallbackTimer = setTimeout(() => {
+        if (active) setSocketFallbackActive(true);
+      }, 5_000);
     };
 
+    const connect = async () => {
+      startPollingFallback();
+      try {
+        const token = await getStoredSessionToken();
+        if (!active || !token) return;
+
+        const endpoint = new URL('/ws', API_BASE_URL);
+        endpoint.protocol = endpoint.protocol === 'https:' ? 'wss:' : 'ws:';
+        socket = new WebSocket(endpoint.toString());
+
+        socket.onopen = () => {
+          socket?.send(
+            JSON.stringify({
+              type: 'auth',
+              token,
+              connectionId: conversationId,
+            }),
+          );
+        };
+        socket.onmessage = (event) => {
+          try {
+            const frame = JSON.parse(String(event.data)) as {
+              type?: string;
+              message?: ConnectionMessage;
+            };
+            if (frame.type === 'ready') {
+              retryDelay = 1_000;
+              if (fallbackTimer) clearTimeout(fallbackTimer);
+              fallbackTimer = undefined;
+              setSocketFallbackActive(false);
+            } else if (frame.type === 'message' && frame.message) {
+              appendMessage(frame.message);
+            }
+          } catch {
+            // Ignore malformed frames; the timed polling fallback remains available.
+          }
+        };
+        socket.onerror = startPollingFallback;
+        socket.onclose = () => {
+          startPollingFallback();
+          if (active) {
+            reconnectTimer = setTimeout(() => {
+              retryDelay = Math.min(retryDelay * 2, 30_000);
+              void connect();
+            }, retryDelay);
+          }
+        };
+      } catch {
+        startPollingFallback();
+      }
+    };
+
+    setSocketFallbackActive(false);
     void connect();
     return () => {
       active = false;
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       socket?.close();
-      setSocketConnected(false);
     };
   }, [appendMessage, chatEnabled, conversationId]);
 
@@ -137,18 +169,49 @@ export default function ChatScreen() {
     const body = text.trim();
     if (!body || sending || !conversationId) return;
 
+    const clientMessageId = createClientMessageId();
+    const optimisticMessage: ConnectionMessage = {
+      id: `optimistic-${clientMessageId}`,
+      connectionId: conversationId,
+      senderUserId: account?.userId ?? '',
+      clientMessageId,
+      body,
+      createdAt: new Date().toISOString(),
+      readAt: null,
+    };
+    appendMessage(optimisticMessage);
+    setText('');
+    Keyboard.dismiss();
     setSending(true);
-    setSendError(null);
     try {
       const result = await createConnectionMessage(conversationId, {
         body,
-        clientMessageId: createClientMessageId(),
+        clientMessageId,
       });
       appendMessage(result);
-      setText('');
-      Keyboard.dismiss();
-    } catch {
-      setSendError('Your message could not be sent. Please try again.');
+    } catch (error) {
+      queryClient.setQueryData<ConnectionMessagePage>(
+        getGetConnectionMessagesQueryKey(conversationId),
+        (current) =>
+          current
+            ? {
+                ...current,
+                items: current.items.filter(
+                  (message) => message.id !== optimisticMessage.id,
+                ),
+              }
+            : current,
+      );
+      void queryClient.invalidateQueries({
+        queryKey: getGetConnectionMessagesQueryKey(conversationId),
+      });
+      showError(
+        friendlyApiError(
+          error,
+          'We couldn’t send your message. Please check your connection and try again.',
+        ),
+        'Message not sent',
+      );
     } finally {
       setSending(false);
     }
@@ -180,8 +243,14 @@ export default function ChatScreen() {
           };
         },
       );
-    } catch {
-      setSendError('Earlier messages could not be loaded.');
+    } catch (error) {
+      showError(
+        friendlyApiError(
+          error,
+          'Earlier messages could not be loaded. Check your connection and try again.',
+        ),
+        'Messages unavailable',
+      );
     } finally {
       setLoadingOlder(false);
     }
@@ -296,11 +365,6 @@ export default function ChatScreen() {
               );
             }}
           />
-          {sendError ? (
-            <Text style={{ color: colors.mutedForeground, paddingHorizontal: 18, paddingBottom: 8 }}>
-              {sendError}
-            </Text>
-          ) : null}
           <View
             style={[
               styles.composer,

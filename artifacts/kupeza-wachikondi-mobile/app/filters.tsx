@@ -16,10 +16,12 @@ import {
   normalizeDistrict,
 } from '@/components/AnimatedDistrictPickerField';
 import { useColors } from '@/hooks/useColors';
+import { useErrorModal } from '@/components/ErrorModal';
 import { INTENTION_OPTIONS, type Intention } from '@/utils/intentions';
 
 export default function FiltersScreen() {
   const colors = useColors();
+  const { showError } = useErrorModal();
   const queryClient = useQueryClient();
   const preferencesQuery = useGetCurrentPreferences();
   const savePreferences = useSaveCurrentPreferences();
@@ -74,7 +76,7 @@ export default function FiltersScreen() {
       ]);
       router.back();
     } catch {
-      Alert.alert('Could not save preferences', 'Check your connection and try again.');
+      showError('We couldn’t save your preferences. Check your connection and try again.', 'Could not save preferences');
     }
   }
 

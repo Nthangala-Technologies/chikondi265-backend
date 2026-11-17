@@ -4,6 +4,7 @@ import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Button, Chip, Header, Shell } from '@/components/ui';
 import { useColors } from '@/hooks/useColors';
+import { useErrorModal } from '@/components/ErrorModal';
 
 const categories = [
   { value: 'harassment', label: 'Harassment' },
@@ -15,6 +16,7 @@ const categories = [
 
 export default function ReportScreen() {
   const colors = useColors();
+  const { showError } = useErrorModal();
   const { userId, connectionId } = useLocalSearchParams<{
     userId?: string;
     connectionId?: string;
@@ -41,7 +43,7 @@ export default function ReportScreen() {
         { text: 'Done', onPress: () => router.back() },
       ]);
     } catch {
-      Alert.alert('Could not send report', 'Check your connection and try again.');
+      showError('We couldn’t send your report. Check your connection and try again.', 'Could not send report');
     }
   }
 

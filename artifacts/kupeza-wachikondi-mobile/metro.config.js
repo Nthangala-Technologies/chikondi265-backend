@@ -1,3 +1,12 @@
 const { getDefaultConfig } = require('expo/metro-config');
 
-module.exports = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
+
+config.transformer.minifierConfig = {
+  compress: {
+    drop_console: true,
+    drop_debugger: true,
+  },
+};
+
+module.exports = config;

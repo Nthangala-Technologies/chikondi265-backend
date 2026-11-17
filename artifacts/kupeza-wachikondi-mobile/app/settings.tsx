@@ -6,16 +6,12 @@ import { router } from 'expo-router';
 import { Header, Shell } from '@/components/ui';
 import { useAuth } from '@/components/AuthProvider';
 import { useColors } from '@/hooks/useColors';
-
-function apiMessage(error: unknown, fallback: string) {
-  return (
-    error as { data?: { error?: { message?: string } } }
-  )?.data?.error?.message ?? fallback;
-}
+import { friendlyApiError, useErrorModal } from '@/components/ErrorModal';
 
 export default function SettingsScreen() {
   const colors = useColors();
   const auth = useAuth();
+  const { showError } = useErrorModal();
   const deactivate = useDeactivateCurrentAccount();
   const activate = useActivateCurrentAccount();
   const deleteAccount = useDeleteCurrentAccount();
@@ -38,9 +34,9 @@ export default function SettingsScreen() {
           : 'Your profile is visible in discovery again.',
       );
     } catch (error) {
-      Alert.alert(
+      showError(
+        friendlyApiError(error, 'We couldn’t update your profile. Check your connection and try again.'),
         'Could not update profile',
-        apiMessage(error, 'Check your connection and try again.'),
       );
     }
   }
@@ -66,11 +62,12 @@ export default function SettingsScreen() {
     try {
       await auth.logout();
     } catch (error) {
-      Alert.alert(
+      showError(
+        friendlyApiError(
+          error,
+          'This device is signed out, but the server could not end the session. Please sign in again.',
+        ),
         'Signed out on this device',
-        error instanceof Error
-          ? error.message
-          : 'The server could not revoke the session.',
       );
     }
   }
@@ -104,9 +101,9 @@ export default function SettingsScreen() {
         ],
       );
     } catch (error) {
-      Alert.alert(
+      showError(
+        friendlyApiError(error, 'We couldn’t delete your account. Check your connection and try again.'),
         'Could not delete account',
-        apiMessage(error, 'Check your connection and try again.'),
       );
     }
   }

@@ -11,10 +11,11 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, FlatList, Image, ImageBackground, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ViewInstance } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Image, ImageBackground, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ViewInstance } from 'react-native';
 import { router } from 'expo-router';
 import { Chip, Header, imageFor, Shell } from '@/components/ui';
 import { useAuth } from '@/components/AuthProvider';
+import { useErrorModal } from '@/components/ErrorModal';
 import { useColors } from '@/hooks/useColors';
 import { toMobileProfile } from '@/utils/live-profile';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ export default function DiscoverScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { account } = useAuth();
+  const { showError } = useErrorModal();
   const queryClient = useQueryClient();
   const discoveryQuery = useGetDiscovery();
   const swipeMutation = useRecordSwipe();
@@ -136,7 +138,10 @@ export default function DiscoverScreen() {
         })
         .catch(() => {
           setSwipedLiveIds((ids) => ids.filter((id) => id !== targetUserId));
-          Alert.alert('Swipe not saved', 'Check your connection and try again.');
+          showError(
+            'We couldn’t save your swipe. Please check your connection and try again.',
+            'Swipe not saved',
+          );
         });
     });
   };

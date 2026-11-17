@@ -11,6 +11,18 @@ const socketUsers = new WeakMap<WebSocket, string>();
 const roomTimers = new Map<string, NodeJS.Timeout>();
 const websocketServer = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 });
 const sessionTokenPattern = /^[A-Za-z0-9_-]{43}$/;
+const connectionIdPattern = /^[0-9a-f-]{36}$/i;
+
+type ChatSocketAuth = { connectionId: string; userId: string };
+
+class ChatSocketAuthError extends Error {
+  constructor(
+    readonly code: "UNAUTHENTICATED" | "FORBIDDEN",
+    message: string,
+  ) {
+    super(message);
+  }
+}
 
 function rejectUpgrade(
   socket: Duplex,
@@ -77,56 +89,121 @@ function addSocket(connectionId: string, userId: string, socket: WebSocket): voi
   socket.send(JSON.stringify({ type: "ready", connectionId }));
 }
 
-async function authenticateUpgrade(
-  request: IncomingMessage,
-  socket: Duplex,
-): Promise<{ connectionId: string; userId: string } | null> {
-  const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
-  if (url.pathname !== "/ws") return null;
-
-  const token = url.searchParams.get("token");
-  const connectionId = url.searchParams.get("connectionId");
+async function authenticateCredentials(
+  token: string | null,
+  connectionId: string | null,
+): Promise<ChatSocketAuth> {
   if (
     !token ||
     !sessionTokenPattern.test(token) ||
     !connectionId ||
-    !/^[0-9a-f-]{36}$/i.test(connectionId)
+    !connectionIdPattern.test(connectionId)
   ) {
-    rejectUpgrade(
-      socket,
-      401,
+    throw new ChatSocketAuthError(
       "UNAUTHENTICATED",
       "A valid session token and connection ID are required.",
     );
-    return null;
   }
 
   const session = await resolveSession(hashSessionToken(token));
   if (!session || session.status !== "active" || session.deletedAt) {
-    rejectUpgrade(socket, 401, "UNAUTHENTICATED", "A valid session is required.");
-    return null;
+    throw new ChatSocketAuthError("UNAUTHENTICATED", "A valid session is required.");
   }
 
   try {
     await assertChatAccess(session.userId, connectionId);
   } catch {
-    rejectUpgrade(socket, 403, "FORBIDDEN", "Chat is unavailable.");
-    return null;
+    throw new ChatSocketAuthError("FORBIDDEN", "Chat is unavailable.");
   }
 
   return { connectionId, userId: session.userId };
+}
+
+async function authenticateUpgrade(
+  request: IncomingMessage,
+  socket: Duplex,
+): Promise<ChatSocketAuth | "awaiting-message-auth" | null> {
+  const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
+  if (url.pathname !== "/ws") return null;
+
+  const token = url.searchParams.get("token");
+  const connectionId = url.searchParams.get("connectionId");
+  if (!token && !connectionId) {
+    return "awaiting-message-auth";
+  }
+
+  try {
+    return await authenticateCredentials(token, connectionId);
+  } catch (error) {
+    const authError =
+      error instanceof ChatSocketAuthError
+        ? error
+        : new ChatSocketAuthError("FORBIDDEN", "Chat is unavailable.");
+    rejectUpgrade(
+      socket,
+      authError.code === "UNAUTHENTICATED" ? 401 : 403,
+      authError.code,
+      authError.message,
+    );
+    return null;
+  }
 }
 
 export function attachChatWebSocket(server: Server): void {
   server.on("upgrade", (request, socket, head) => {
     void authenticateUpgrade(request, socket)
       .then((auth) => {
-        if (!auth) {
-          return;
-        }
+        if (!auth) return;
 
         websocketServer.handleUpgrade(request, socket, head, (client) => {
-          addSocket(auth.connectionId, auth.userId, client);
+          if (auth !== "awaiting-message-auth") {
+            addSocket(auth.connectionId, auth.userId, client);
+            return;
+          }
+
+          let authenticating = false;
+          const authTimeout = setTimeout(() => client.close(4401, "Authentication timed out"), 5_000);
+          authTimeout.unref();
+          client.once("close", () => clearTimeout(authTimeout));
+          client.on("message", (data) => {
+            if (authenticating) return;
+            authenticating = true;
+            void (async () => {
+              try {
+                const frame = JSON.parse(data.toString()) as {
+                  type?: unknown;
+                  token?: unknown;
+                  connectionId?: unknown;
+                };
+                if (
+                  frame.type !== "auth" ||
+                  typeof frame.token !== "string" ||
+                  typeof frame.connectionId !== "string"
+                ) {
+                  client.close(1008, "Send a valid auth frame first");
+                  return;
+                }
+                const verified = await authenticateCredentials(
+                  frame.token,
+                  frame.connectionId,
+                );
+                if (client.readyState !== WebSocket.OPEN) return;
+                clearTimeout(authTimeout);
+                addSocket(verified.connectionId, verified.userId, client);
+              } catch (error) {
+                const code =
+                  error instanceof ChatSocketAuthError
+                    ? error.code
+                    : "UNAUTHENTICATED";
+                client.close(
+                  code === "UNAUTHENTICATED" ? 4401 : 4403,
+                  code === "UNAUTHENTICATED"
+                    ? "Authentication failed"
+                    : "Chat is unavailable",
+                );
+              }
+            })();
+          });
         });
       })
       .catch(() => {

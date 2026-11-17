@@ -14,10 +14,12 @@ import { router } from 'expo-router';
 import { Button, Header, PhotoAvatar, Shell } from '@/components/ui';
 import { defaultAvatarForUser } from '@/components/AppProvider';
 import { useColors } from '@/hooks/useColors';
+import { useErrorModal } from '@/components/ErrorModal';
 import { getIntentionLabel } from '@/utils/intentions';
 
 export default function LikesScreen() {
   const colors = useColors();
+  const { showError } = useErrorModal();
   const queryClient = useQueryClient();
   const likesQuery = useGetIncomingLikes({
     query: { refetchInterval: 15_000 },
@@ -46,7 +48,10 @@ export default function LikesScreen() {
         ]);
       }
     } catch {
-      Alert.alert('Could not save your response', 'Check your connection and try again.');
+      showError(
+        'We couldn’t save your response. Check your connection and try again.',
+        'Response not saved',
+      );
     } finally {
       setActingOn(null);
     }

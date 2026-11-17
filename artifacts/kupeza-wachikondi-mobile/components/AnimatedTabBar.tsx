@@ -111,6 +111,7 @@ export function AnimatedTabBar({ state, descriptors, emitter, navigateToTab }: B
             const focused = state.index === index;
             const onPress = () => {
               const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+              // Active tabs intentionally do not navigate, preventing duplicate tab routes.
               if (!focused && !event.defaultPrevented) {
                 if (!web) Haptics.selectionAsync().catch(() => {});
                 navigateToTab(route.key);
