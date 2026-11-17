@@ -374,3 +374,10 @@ Configure a non-secret `EXPO_PUBLIC_API_BASE_URL` for the mobile client and set 
 - Removed the manual payment-verification endpoint, supporting service/repository logic, tests, and generated API contract.
 - The existing PayChangu webhook route and processing code were not changed.
 - **Verification:** full workspace typecheck passed. The rollback is committed locally and has not been pushed.
+
+## 2026-11-17 — Mobile list and chat polish
+
+- Restyled Likes, Matches, Messages, Notifications, discovery search results, and the discovery profile card with flatter layouts, theme colors, scaled icon sizes, and circular avatars. Connection rows show the latest message and a compact timestamp instead of a chevron or empty-message placeholder.
+- Chat bubbles now align by sender; new messages fade in, pending messages pulse, and failed sends shake before their optimistic entry is removed. The chat actions sheet springs into view, and primary controls use press-scale feedback.
+- Added Like and Block actions to search-result details. The shared client logger now suppresses expected aborted/cancelled request noise. The status bar already followed the selected theme.
+- **Verification:** `pnpm -w run typecheck` passed after restarting the Expo workflow. The unauthenticated browser screenshot shows the sign-in screen; signed-in screens and native-device interactions were not visually tested. No backend routes, database, auth logic, payment code, or new dependencies were changed.
