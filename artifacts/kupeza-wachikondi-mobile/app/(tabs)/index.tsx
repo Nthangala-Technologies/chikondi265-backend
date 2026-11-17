@@ -368,7 +368,7 @@ export default function DiscoverScreen() {
       <View
         ref={cardRef}
         collapsable={false}
-        style={[styles.card, { backgroundColor: colors.surface, shadowColor: colors.shadow }]}
+        style={styles.card}
         testID={`card-profile-${current.id}`}
       >
         <Animated.View
@@ -393,29 +393,26 @@ export default function DiscoverScreen() {
             accessibilityLabel={`View ${current.name}'s profile`}
             testID="button-open-profile-detail"
           >
-            <View style={styles.cardContent}>
-              <ImageBackground
-                source={imageFor(current.photo)}
-                resizeMode="cover"
-                style={styles.cardPhoto}
-                imageStyle={styles.cardPhotoImage}
-              >
-                <View style={[styles.cardShade, { backgroundColor: colors.imageShade }]} />
-                <View style={styles.cardStatus}>
-                  <Text style={[styles.status, { color: colors.onImage, backgroundColor: colors.overlay }]}>Profile</Text>
-                  <Feather name="bookmark" size={20} color={colors.onImage} />
-                </View>
-              </ImageBackground>
-              <View style={[styles.cardCopy, { backgroundColor: colors.surface }]}>
-                <Text numberOfLines={1} style={[styles.cardName, { color: colors.onSurface }]}>
-                  {current.name}, {current.age} {current.verified && <Ionicons name="shield-checkmark" size={20} color={colors.primary} />}
-                </Text>
-                <Text style={[styles.cardMeta, { color: colors.onSurfaceVariant }]}>
-                  <Feather name="map-pin" size={20} color={colors.onSurfaceVariant} /> {current.location}
-                </Text>
-                <Text numberOfLines={2} style={[styles.cardBio, { color: colors.onSurfaceVariant }]}>{current.bio}</Text>
-                <View style={styles.chips}>{current.interests.map((interest) => <Chip key={interest} label={interest} />)}</View>
-              </View>
+            <ImageBackground
+              source={imageFor(current.photo)}
+              resizeMode="cover"
+              style={StyleSheet.absoluteFill}
+              imageStyle={styles.cardPhoto}
+            />
+            <View style={styles.cardShade} />
+            <View style={styles.cardStatus}>
+              <Text style={styles.status}>Profile</Text>
+              <Feather name="bookmark" size={16} color="#fff" />
+            </View>
+            <View style={styles.cardCopy}>
+              <Text numberOfLines={1} style={styles.cardName}>
+                {current.name}, {current.age} {current.verified && <Ionicons name="shield-checkmark" size={20} color="#aee0ed" />}
+              </Text>
+              <Text style={styles.cardMeta}>
+                <Feather name="map-pin" size={12} color="#fff" /> {current.location}
+              </Text>
+              <Text numberOfLines={2} style={styles.cardBio}>{current.bio}</Text>
+              <View style={styles.chips}>{current.interests.map((interest) => <Chip key={interest} label={interest} />)}</View>
             </View>
           </Pressable>
         </Animated.View>
@@ -569,23 +566,21 @@ const styles = StyleSheet.create({
   modalActionText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
   toast: { position: 'absolute', bottom: 24, alignSelf: 'center', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16 },
   toastText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
-  card: { flex: 1, minHeight: 0, width: '100%', maxWidth: 520, alignSelf: 'center', borderRadius: 20, overflow: 'hidden', shadowOpacity: 0.15, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
-  cardContent: { flex: 1, minHeight: 0 },
-  cardPhoto: { flex: 1, minHeight: 140, width: '100%' },
-  cardPhotoImage: { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  cardShade: { ...StyleSheet.absoluteFill, borderRadius: 16 },
+  card: { flex: 1, minHeight: 0, width: '100%', maxWidth: 520, alignSelf: 'center', borderRadius: 28, overflow: 'hidden', backgroundColor: '#c8b4ba' },
+  cardPhoto: { width: '100%', height: '100%' },
+  cardShade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(29,18,35,0.18)', borderRadius: 28 },
   cardStatus: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  status: { overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, fontFamily: 'Inter_600SemiBold', fontSize: 12 },
-  cardCopy: { padding: 16, gap: 8 },
-  cardName: { fontFamily: 'Inter_600SemiBold', fontSize: 20, letterSpacing: 0.15 },
-  cardMeta: { fontSize: 14, letterSpacing: 0.1, marginTop: 4 },
-  cardBio: { lineHeight: 20, fontSize: 14 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  actions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  status: { color: '#fff', backgroundColor: 'rgba(42,27,45,0.65)', overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, fontFamily: 'Inter_700Bold', fontSize: 11 },
+  cardCopy: { position: 'absolute', left: 20, right: 20, bottom: 20 },
+  cardName: { color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 30, letterSpacing: -1.2 },
+  cardMeta: { color: '#fff', fontSize: 12, marginTop: 4 },
+  cardBio: { color: 'rgba(255,255,255,0.88)', lineHeight: 19, fontSize: 13, marginTop: 9, marginBottom: 11 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  actions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 14, paddingVertical: 14 },
   action: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   super: { width: 56, height: 56, borderRadius: 28 },
   like: { width: 64, height: 64, borderRadius: 32 },
-  hint: { textAlign: 'center', fontSize: 12, paddingBottom: 4 },
+  hint: { textAlign: 'center', fontSize: 11, paddingBottom: 4 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 25, gap: 12 },
   emptyIcon: { width: 48, height: 48, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontFamily: 'Inter_700Bold', fontSize: 24, textAlign: 'center' },
