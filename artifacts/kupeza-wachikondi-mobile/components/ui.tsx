@@ -1,7 +1,7 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { ReactNode } from 'react';
-import { Image, ImageSourcePropType, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { ReactNode, useRef } from 'react';
+import { Animated, Image, ImageSourcePropType, Platform, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { profileImages, Profile } from '@/components/AppProvider';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -59,7 +59,7 @@ export function Header({
       <Brand />
       {back && (
         <Pressable onPress={() => router.back()} style={styles.iconButton}>
-          <Feather name="arrow-left" size={19} color={colors.foreground} />
+          <Feather name="arrow-left" size={20} color={colors.foreground} />
         </Pressable>
       )}
       <View style={styles.headerSpacer} />
@@ -70,7 +70,7 @@ export function Header({
           accessibilityRole="button"
           accessibilityLabel="Notifications"
         >
-          <Feather name="bell" size={19} color={colors.foreground} />
+          <Feather name="bell" size={20} color={colors.foreground} />
         </Pressable>
       )}
     </View>
@@ -85,7 +85,7 @@ export function PhotoAvatar({ photo, size = 52 }: { photo: number | string; size
   return (
     <Image
       source={imageFor(photo)}
-      style={{ width: size, height: size, borderRadius: size * 0.32 }}
+      style={{ width: size, height: size, borderRadius: size / 2 }}
     />
   );
 }
@@ -107,7 +107,64 @@ export function imageFor(photo: number | string): ImageSourcePropType {
 
 export function Button({ children, onPress, secondary = false, icon, testID, disabled = false }: { children: ReactNode; onPress: () => void; secondary?: boolean; icon?: keyof typeof Feather.glyphMap; testID?: string; disabled?: boolean }) {
   const colors = useColors();
-  return <Pressable testID={testID} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, { backgroundColor: secondary ? colors.secondary : colors.primary, opacity: disabled ? 0.5 : pressed ? 0.78 : 1 }]}>{icon && <Feather name={icon} size={16} color={secondary ? colors.secondaryForeground : '#fff'} />}<Text style={[styles.buttonText, { color: secondary ? colors.secondaryForeground : '#fff' }]}>{children}</Text></Pressable>;
+  return (
+    <PressScale
+      testID={testID}
+      disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.button,
+        { backgroundColor: secondary ? colors.secondary : colors.primary, opacity: disabled ? 0.5 : 1 },
+      ]}
+    >
+      {icon && <Feather name={icon} size={20} color={secondary ? colors.secondaryForeground : colors.primaryForeground} />}
+      <Text style={[styles.buttonText, { color: secondary ? colors.secondaryForeground : colors.primaryForeground }]}>{children}</Text>
+    </PressScale>
+  );
+}
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export function PressScale({
+  children,
+  onPress,
+  style,
+  disabled = false,
+  testID,
+  accessibilityLabel,
+  accessibilityRole = 'button',
+}: {
+  children: ReactNode;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
+  testID?: string;
+  accessibilityLabel?: string;
+  accessibilityRole?: 'button';
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const animateScale = (value: number) => {
+    Animated.timing(scale, {
+      toValue: value,
+      duration: 120,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  };
+
+  return (
+    <AnimatedPressable
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
+      disabled={disabled}
+      onPress={onPress}
+      onPressIn={() => animateScale(0.97)}
+      onPressOut={() => animateScale(1)}
+      style={[style, { transform: [{ scale }] }]}
+      testID={testID}
+    >
+      {children}
+    </AnimatedPressable>
+  );
 }
 
 export function IconButton({ name, onPress, color }: { name: keyof typeof Feather.glyphMap; onPress: () => void; color?: string }) {
@@ -117,7 +174,7 @@ export function IconButton({ name, onPress, color }: { name: keyof typeof Feathe
 
 export function Chip({ label, active = false, onPress }: { label: string; active?: boolean; onPress?: () => void }) {
   const colors = useColors();
-  return <Pressable disabled={!onPress} onPress={onPress} style={[styles.chip, { backgroundColor: active ? '#fff0f3' : colors.card, borderColor: active ? colors.primary : colors.border }]}><Text style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 12, fontWeight: '600' }}>{label}</Text></Pressable>;
+  return <Pressable disabled={!onPress} onPress={onPress} style={[styles.chip, { backgroundColor: active ? colors.accent : colors.surface, borderColor: active ? colors.primary : colors.border }]}><Text style={{ color: active ? colors.primary : colors.onSurfaceVariant, fontSize: 12, fontWeight: '600' }}>{label}</Text></Pressable>;
 }
 
 export const styles = StyleSheet.create({
@@ -131,7 +188,7 @@ export const styles = StyleSheet.create({
   brandLogo: { width: 42, height: 42 },
   headerBrand: { marginBottom: 20 },
   iconButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  roundButton: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', shadowColor: '#3d253f', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
+  roundButton: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
   button: { minHeight: 48, paddingHorizontal: 18, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   buttonText: { fontFamily: 'Inter_700Bold', fontSize: 14 },
   chip: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 999, borderWidth: 1 },

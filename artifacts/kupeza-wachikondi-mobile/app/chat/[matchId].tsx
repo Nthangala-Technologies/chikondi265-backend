@@ -1,4 +1,4 @@
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import {
   createConnectionMessage,
   getConnectionMessagesAfterCursor,
@@ -15,13 +15,13 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import * as ScreenCapture from 'expo-screen-capture';
-import { ActivityIndicator, Alert, FlatList, Keyboard, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
+import { ActivityIndicator, Alert, Animated, FlatList, Keyboard, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useApp, getProfile, ChatMessage } from '@/components/AppProvider';
 import { getStoredSessionToken, useAuth } from '@/components/AuthProvider';
 import { friendlyApiError, useErrorModal } from '@/components/ErrorModal';
-import { Avatar, Header, Shell } from '@/components/ui';
+import { Avatar, Header, PressScale, Shell } from '@/components/ui';
 import { UnlockChatButton } from '@/components/UnlockChatButton';
 import { API_BASE_URL, USE_LIVE_API } from '@/constants/config';
 import { useColors } from '@/hooks/useColors';
@@ -47,10 +47,14 @@ export default function ChatScreen() {
   );
   const [socketFallbackActive, setSocketFallbackActive] = useState(false);
   const [sending, setSending] = useState(false);
+  const [failedMessageId, setFailedMessageId] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [editingMessage, setEditingMessage] = useState<ConnectionMessage | null>(null);
   const [editDraft, setEditDraft] = useState('');
   const [toastMessage, setToastMessage] = useState('');
+  const [chatActionsVisible, setChatActionsVisible] = useState(false);
+  const chatModalY = useRef(new Animated.Value(300)).current;
+  const chatBackdropOpacity = useRef(new Animated.Value(0)).current;
   const messagesQuery = useGetConnectionMessages(matchId ?? '', {
     query: {
       enabled: chatEnabled,
@@ -142,6 +146,26 @@ export default function ChatScreen() {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!chatActionsVisible) return;
+    chatModalY.setValue(300);
+    chatBackdropOpacity.setValue(0);
+    Animated.parallel([
+      Animated.spring(chatModalY, {
+        toValue: 0,
+        damping: 18,
+        stiffness: 180,
+        mass: 0.8,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(chatBackdropOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+    ]).start();
+  }, [chatActionsVisible, chatBackdropOpacity, chatModalY]);
 
   const performDelete = useCallback(
     async (message: ConnectionMessage, scope: 'me' | 'everyone') => {
@@ -247,6 +271,7 @@ export default function ChatScreen() {
   }, [performClear]);
 
   const blockOtherUser = useCallback(() => {
+    setChatActionsVisible(false);
     const otherUserId = connectionQuery.data?.otherProfile?.userId;
     if (!otherUserId) return;
     Alert.alert(
@@ -277,29 +302,22 @@ export default function ChatScreen() {
   }, [blockMutation, connectionQuery.data?.otherProfile?.userId, refreshChatData, showError]);
 
   const showChatActions = useCallback(() => {
-    const otherProfile = connectionQuery.data?.otherProfile;
-    const choices = [
-      { text: 'Clear Chat', onPress: confirmClearChat },
-      { text: 'Block User', style: 'destructive' as const, onPress: blockOtherUser },
-      ...(otherProfile
-        ? [
-            {
-              text: 'Report User',
-              onPress: () =>
-                router.push({
-                  pathname: '/report',
-                  params: {
-                    userId: otherProfile.userId,
-                    connectionId: conversationId,
-                  },
-                }),
-            },
-          ]
-        : []),
-      { text: 'Cancel', style: 'cancel' as const },
-    ];
-    Alert.alert('Chat options', undefined, choices);
-  }, [blockOtherUser, confirmClearChat, connectionQuery.data?.otherProfile, conversationId]);
+    setChatActionsVisible(true);
+  }, []);
+
+  const finishFailedMessageAnimation = useCallback((messageId: string) => {
+    queryClient.setQueryData<ConnectionMessagePage>(
+      getGetConnectionMessagesQueryKey(conversationId),
+      (current) =>
+        current
+          ? { ...current, items: current.items.filter((item) => item.id !== messageId) }
+          : current,
+    );
+    setFailedMessageId(null);
+    void queryClient.invalidateQueries({
+      queryKey: getGetConnectionMessagesQueryKey(conversationId),
+    });
+  }, [conversationId, queryClient]);
 
   const saveEditedMessage = useCallback(async () => {
     if (!editingMessage || !editDraft.trim()) return;
@@ -446,21 +464,7 @@ export default function ChatScreen() {
       });
       appendMessage(result);
     } catch (error) {
-      queryClient.setQueryData<ConnectionMessagePage>(
-        getGetConnectionMessagesQueryKey(conversationId),
-        (current) =>
-          current
-            ? {
-                ...current,
-                items: current.items.filter(
-                  (message) => message.id !== optimisticMessage.id,
-                ),
-              }
-            : current,
-      );
-      void queryClient.invalidateQueries({
-        queryKey: getGetConnectionMessagesQueryKey(conversationId),
-      });
+      setFailedMessageId(optimisticMessage.id);
       showError(
         friendlyApiError(
           error,
@@ -571,7 +575,7 @@ export default function ChatScreen() {
               style={styles.headerAction}
               hitSlop={10}
             >
-              <Feather name="more-horizontal" size={21} color={colors.foreground} />
+              <Feather name="more-horizontal" size={20} color={colors.foreground} />
             </Pressable>
           }
         />
@@ -600,40 +604,21 @@ export default function ChatScreen() {
                 No messages yet. Start the conversation.
               </Text>
             }
-            renderItem={({ item }) => {
-              const outgoing = item.senderUserId === account?.userId;
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${outgoing ? 'Your' : title}'s message. Hold for options.`}
-                  onLongPress={() => showMessageActions(item)}
-                  delayLongPress={350}
-                  style={[
-                    styles.bubble,
-                    outgoing
-                      ? styles.outgoing
-                      : [styles.incoming, { backgroundColor: colors.card }],
-                  ]}
-                >
-                  <Text style={{ color: outgoing ? '#fff' : colors.foreground, lineHeight: 20 }}>
-                    {item.body}
-                  </Text>
-                  <Text
-                    style={{
-                      color: outgoing ? 'rgba(255,255,255,0.65)' : colors.mutedForeground,
-                      fontSize: 10,
-                      marginTop: 4,
-                      textAlign: 'right',
-                    }}
-                  >
-                    {new Date(item.createdAt).toLocaleTimeString([], {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </Text>
-                </Pressable>
-              );
-            }}
+            renderItem={({ item }) => (
+              <AnimatedMessageBubble
+                message={item}
+                currentUserId={account?.userId ?? ''}
+                status={
+                  item.id === failedMessageId
+                    ? 'failed'
+                    : item.id.startsWith('optimistic-')
+                      ? 'sending'
+                      : 'idle'
+                }
+                onLongPress={() => showMessageActions(item)}
+                onFailureAnimationComplete={finishFailedMessageAnimation}
+              />
+            )}
           />
           <View
             style={[
@@ -655,7 +640,7 @@ export default function ChatScreen() {
               returnKeyType="send"
               maxLength={2000}
             />
-            <Pressable
+            <PressScale
               accessibilityRole="button"
               accessibilityLabel="Send message"
               disabled={sending || !text.trim()}
@@ -664,9 +649,10 @@ export default function ChatScreen() {
                 styles.send,
                 { backgroundColor: colors.primary, opacity: sending || !text.trim() ? 0.55 : 1 },
               ]}
+              testID="button-send-message"
             >
-              <Feather name="send" size={17} color="#fff" />
-            </Pressable>
+              <Feather name="send" size={20} color={colors.primaryForeground} />
+            </PressScale>
           </View>
         </KeyboardAvoidingView>
         {toastMessage ? (
@@ -680,7 +666,7 @@ export default function ChatScreen() {
           visible={Boolean(editingMessage)}
           onRequestClose={() => setEditingMessage(null)}
         >
-          <View style={styles.modalBackdrop}>
+          <View style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}>
             <View style={[styles.editModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.editTitle, { color: colors.foreground }]}>Edit message</Text>
               <TextInput
@@ -730,13 +716,237 @@ export default function ChatScreen() {
             </View>
           </View>
         </Modal>
+        <Modal
+          transparent
+          animationType="none"
+          visible={chatActionsVisible}
+          onRequestClose={() => setChatActionsVisible(false)}
+        >
+          <View style={styles.chatOptionsRoot}>
+            <Animated.View style={[styles.chatOptionsBackdrop, { opacity: chatBackdropOpacity, backgroundColor: colors.overlay }]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss chat options"
+                onPress={() => setChatActionsVisible(false)}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.chatOptionsSheet,
+                { backgroundColor: colors.surface, transform: [{ translateY: chatModalY }] },
+              ]}
+            >
+              {[
+                {
+                  label: 'Block',
+                  icon: 'ban' as const,
+                  color: colors.destructive,
+                  onPress: blockOtherUser,
+                },
+                {
+                  label: 'Report',
+                  icon: 'flag' as const,
+                  color: colors.onSurface,
+                  onPress: () => {
+                    setChatActionsVisible(false);
+                    const otherProfile = connectionQuery.data?.otherProfile;
+                    if (!otherProfile) return;
+                    router.push({
+                      pathname: '/report',
+                      params: { userId: otherProfile.userId, connectionId: conversationId },
+                    });
+                  },
+                },
+                {
+                  label: 'Clear Chat',
+                  icon: 'trash' as const,
+                  color: colors.destructive,
+                  onPress: () => {
+                    setChatActionsVisible(false);
+                    confirmClearChat();
+                  },
+                },
+              ].map((action) => (
+                <Pressable
+                  key={action.label}
+                  accessibilityRole="button"
+                  accessibilityLabel={action.label}
+                  onPress={action.onPress}
+                  style={styles.chatOption}
+                  testID={`chat-option-${action.label.toLowerCase().replace(' ', '-')}`}
+                >
+                  <View style={[styles.chatOptionIcon, { backgroundColor: colors.surfaceVariant }]}>
+                    <Ionicons name={action.icon} size={24} color={action.color} />
+                  </View>
+                  <Text style={[styles.chatOptionLabel, { color: colors.onSurface }]}>
+                    {action.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </Animated.View>
+          </View>
+        </Modal>
       </Shell>
     );
   }
 
   if (!profile || !match) return <View />;
   const send = () => { sendMessage(match.id, text); setText(''); Keyboard.dismiss(); };
-  return <KeyboardAvoidingView style={[styles.root, { backgroundColor: colors.background }]} behavior="padding"><Header title={profile.name} back /><FlatList data={[...messages].reverse()} inverted keyExtractor={(item) => item.id} contentContainerStyle={styles.list} keyboardDismissMode="interactive" keyboardShouldPersistTaps="handled" renderItem={({ item }: { item: ChatMessage }) => <View style={[styles.bubble, item.sender === 'me' ? styles.outgoing : [styles.incoming, { backgroundColor: colors.card }]]}><Text style={{ color: item.sender === 'me' ? '#fff' : colors.foreground, lineHeight: 20 }}>{item.text}</Text><Text style={{ color: item.sender === 'me' ? 'rgba(255,255,255,0.65)' : colors.mutedForeground, fontSize: 10, marginTop: 4 }}>{item.time}</Text></View>} ListHeaderComponent={<View style={{ height: 30 }} />} /><View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 8), backgroundColor: colors.card, borderColor: colors.border }]}><TextInput ref={input} value={text} onChangeText={setText} placeholder="Write a thoughtful message…" placeholderTextColor={colors.mutedForeground} style={[styles.field, { color: colors.foreground }]} onSubmitEditing={send} returnKeyType="send" /><Pressable onPress={send} style={[styles.send, { backgroundColor: colors.primary }]}><Feather name="send" size={17} color="#fff" /></Pressable></View></KeyboardAvoidingView>;
+  return (
+    <KeyboardAvoidingView style={[styles.root, { backgroundColor: colors.background }]} behavior="padding">
+      <Header title={profile.name} back />
+      <FlatList
+        data={[...messages].reverse()}
+        inverted
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        renderItem={({ item }: { item: ChatMessage }) => {
+          const mine = item.sender === 'me';
+          return (
+            <View style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
+              <View style={[styles.bubble, mine ? [styles.outgoing, { backgroundColor: colors.primary }] : [styles.incoming, { backgroundColor: colors.surfaceVariant }]]}>
+                <Text style={{ color: mine ? colors.primaryForeground : colors.onSurface, lineHeight: 20 }}>{item.text}</Text>
+                <Text style={{ color: mine ? colors.primaryForeground : colors.onSurfaceVariant, opacity: mine ? 0.68 : 1, fontSize: 12, marginTop: 4, textAlign: 'right' }}>{item.time}</Text>
+              </View>
+            </View>
+          );
+        }}
+        ListHeaderComponent={<View style={{ height: 32 }} />}
+      />
+      <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 8), backgroundColor: colors.surface, borderColor: colors.divider }]}>
+        <TextInput
+          ref={input}
+          value={text}
+          onChangeText={setText}
+          placeholder="Write a thoughtful message…"
+          placeholderTextColor={colors.onSurfaceVariant}
+          style={[styles.field, { color: colors.onSurface }]}
+          onSubmitEditing={send}
+          returnKeyType="send"
+        />
+        <PressScale onPress={send} style={[styles.send, { backgroundColor: colors.primary }]}>
+          <Feather name="send" size={20} color={colors.primaryForeground} />
+        </PressScale>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+function AnimatedMessageBubble({
+  message,
+  currentUserId,
+  status,
+  onLongPress,
+  onFailureAnimationComplete,
+}: {
+  message: ConnectionMessage;
+  currentUserId: string;
+  status: 'idle' | 'sending' | 'failed';
+  onLongPress: () => void;
+  onFailureAnimationComplete: (messageId: string) => void;
+}) {
+  const colors = useColors();
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(8)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
+  const pulse = useRef<Animated.CompositeAnimation | null>(null);
+  const mine = message.senderUserId === currentUserId;
+
+  useEffect(() => {
+    const isRecent = Date.now() - new Date(message.createdAt).getTime() < 1_500;
+    if (!isRecent && status === 'idle') {
+      opacity.setValue(1);
+      translateY.setValue(0);
+      return;
+    }
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(translateY, { toValue: 0, duration: 180, useNativeDriver: Platform.OS !== 'web' }),
+    ]).start();
+    return () => {
+      pulse.current?.stop();
+      pulse.current = null;
+    };
+  }, [message.createdAt, message.id, opacity, translateY]);
+
+  useEffect(() => {
+    if (status === 'sending') {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(opacity, { toValue: 0.6, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
+          Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
+        ]),
+      );
+      pulse.current = animation;
+      const timer = setTimeout(() => animation.start(), 180);
+      return () => {
+        clearTimeout(timer);
+        animation.stop();
+        if (pulse.current === animation) pulse.current = null;
+      };
+    }
+
+    pulse.current?.stop();
+    pulse.current = null;
+    if (status === 'failed') {
+      opacity.setValue(1);
+      const shake = Animated.sequence([
+        Animated.timing(translateX, { toValue: -4, duration: 60, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(translateX, { toValue: 4, duration: 60, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(translateX, { toValue: -4, duration: 60, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(translateX, { toValue: 4, duration: 60, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(translateX, { toValue: 0, duration: 60, useNativeDriver: Platform.OS !== 'web' }),
+      ]);
+      shake.start(({ finished }) => {
+        if (finished) onFailureAnimationComplete(message.id);
+      });
+      return () => shake.stop();
+    }
+    opacity.setValue(1);
+    return undefined;
+  }, [message.id, onFailureAnimationComplete, opacity, status, translateX]);
+
+  return (
+    <View style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
+      <Animated.View
+        style={[
+          styles.bubble,
+          mine
+            ? [styles.outgoing, { backgroundColor: colors.primary }]
+            : [styles.incoming, { backgroundColor: colors.surfaceVariant }],
+          { opacity, transform: [{ translateY }, { translateX }] },
+        ]}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${mine ? 'Your' : 'Their'} message. Hold for options.`}
+          onLongPress={onLongPress}
+          delayLongPress={350}
+        >
+          <Text style={{ color: mine ? colors.primaryForeground : colors.onSurface, lineHeight: 20 }}>
+            {message.body}
+          </Text>
+          <Text
+            style={{
+              color: mine ? colors.primaryForeground : colors.onSurfaceVariant,
+              opacity: mine ? 0.68 : 1,
+              fontSize: 12,
+              marginTop: 4,
+              textAlign: 'right',
+            }}
+          >
+            {new Date(message.createdAt).toLocaleTimeString([], {
+              hour: 'numeric',
+              minute: '2-digit',
+            })}
+          </Text>
+        </Pressable>
+      </Animated.View>
+    </View>
+  );
 }
 
 function createClientMessageId(): string {
@@ -747,10 +957,10 @@ function createClientMessageId(): string {
 }
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  list: { paddingHorizontal: 18, paddingBottom: 10 },
-  bubble: { maxWidth: '80%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18, marginBottom: 10 },
-  incoming: { alignSelf: 'flex-start', borderBottomLeftRadius: 5 },
-  outgoing: { alignSelf: 'flex-end', backgroundColor: '#bd5578', borderBottomRightRadius: 5 },
+  list: { paddingHorizontal: 16, paddingBottom: 12 },
+  bubble: { maxWidth: '75%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, marginBottom: 12 },
+  incoming: { alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
+  outgoing: { alignSelf: 'flex-end', borderBottomRightRadius: 4 },
   composer: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1 },
   field: { flex: 1, minHeight: 44, fontSize: 14, paddingHorizontal: 8 },
   send: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
@@ -763,14 +973,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 11,
     borderRadius: 14,
-    backgroundColor: '#2d2332',
   },
-  toastText: { color: '#fff', fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  toastText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
   modalBackdrop: {
     flex: 1,
     justifyContent: 'center',
     padding: 22,
-    backgroundColor: 'rgba(15, 12, 19, 0.48)',
   },
   editModal: {
     borderWidth: 1,
@@ -792,4 +1000,18 @@ const styles = StyleSheet.create({
   editActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 10 },
   editAction: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 },
   saveEditAction: { minHeight: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, borderRadius: 13 },
+  chatOptionsRoot: { flex: 1, justifyContent: 'flex-end' },
+  chatOptionsBackdrop: { ...StyleSheet.absoluteFill },
+  chatOptionsSheet: {
+    height: 160,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+  },
+  chatOption: { flex: 1, alignItems: 'center', gap: 8 },
+  chatOptionIcon: { width: 56, height: 56, borderRadius: 28, padding: 16, alignItems: 'center', justifyContent: 'center' },
+  chatOptionLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
 });

@@ -14,11 +14,16 @@ const icons = {
 
 function relativeTime(value: string) {
   const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return 'now';
+  if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hr ago`;
-  return new Date(value).toLocaleDateString();
+  const date = new Date(value);
+  if (hours < 24 && date.toDateString() === new Date().toDateString()) return `${hours}h`;
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  if (minutes < 7 * 24 * 60) return date.toLocaleDateString([], { weekday: 'short' });
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
 export default function NotificationsScreen() {
@@ -44,7 +49,7 @@ export default function NotificationsScreen() {
         </View>
       ) : items.length === 0 ? (
         <View style={styles.state}>
-          <Feather name="bell" size={22} color={colors.mutedForeground} />
+          <Feather name="bell" size={24} color={colors.mutedForeground} />
           <Text style={[styles.copy, { color: colors.mutedForeground }]}>
             New likes, matches, and unread messages will appear here.
           </Text>
@@ -58,17 +63,21 @@ export default function NotificationsScreen() {
             else if (item.kind === 'match') router.push('/(tabs)/matches');
             else if (item.connectionId) router.push({ pathname: '/chat/[matchId]', params: { matchId: item.connectionId } });
           }}
-          style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={styles.row}
           testID={`notification-${item.kind}-${item.id}`}
+          android_ripple={{ color: colors.ripple }}
         >
-          <View style={[styles.icon, { backgroundColor: colors.secondary }]}>
-            <Feather name={icons[item.kind]} size={17} color={colors.secondaryForeground} />
+          <View style={[styles.icon, { backgroundColor: colors.surfaceVariant }]}>
+            <Feather name={icons[item.kind]} size={24} color={colors.secondaryForeground} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.foreground }]}>{item.title}</Text>
-            <Text style={[styles.copy, { color: colors.mutedForeground }]}>{item.body}</Text>
-            <Text style={[styles.time, { color: colors.mutedForeground }]}>{relativeTime(item.createdAt)}</Text>
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, { color: colors.onSurface }]} numberOfLines={1}>{item.title}</Text>
+              <Text style={[styles.time, { color: colors.onSurfaceVariant }]}>{relativeTime(item.createdAt)}</Text>
+            </View>
+            <Text style={[styles.copy, { color: colors.onSurfaceVariant }]} numberOfLines={1}>{item.body}</Text>
           </View>
+          <View style={[styles.divider, { backgroundColor: colors.divider }]} />
         </Pressable>
       ))}
     </Shell>
@@ -76,11 +85,13 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 14, borderRadius: 18, borderWidth: 1, marginBottom: 10 },
-  icon: { width: 36, height: 36, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  title: { fontFamily: 'Inter_700Bold', fontSize: 14 },
-  copy: { fontSize: 12, lineHeight: 18, marginTop: 4 },
-  time: { fontSize: 10, marginTop: 7 },
+  row: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, position: 'relative' },
+  icon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  title: { flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 16 },
+  copy: { fontSize: 14, lineHeight: 18, marginTop: 4 },
+  time: { fontSize: 12 },
+  divider: { position: 'absolute', left: 72, right: 0, bottom: 0, height: 1 },
   state: { minHeight: 220, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24 },
   retry: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
 });

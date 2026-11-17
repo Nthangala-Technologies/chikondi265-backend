@@ -14,5 +14,18 @@ import { useTheme } from '@/components/ThemeProvider';
 export function useColors() {
   const { scheme } = useTheme();
   const palette = scheme === 'dark' ? colors.dark : colors.light;
-  return { ...palette, radius: colors.radius };
+  return {
+    ...palette,
+    radius: colors.radius,
+    surface: palette.card,
+    onSurface: palette.foreground,
+    surfaceVariant: palette.secondary,
+    onSurfaceVariant: palette.mutedForeground,
+    divider: palette.border,
+    ripple: palette.muted,
+    onImage: palette.primaryForeground,
+    shadow: '#000000',
+    overlay: scheme === 'dark' ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.48)',
+    imageShade: scheme === 'dark' ? 'rgba(0,0,0,0.48)' : 'rgba(0,0,0,0.24)',
+  };
 }

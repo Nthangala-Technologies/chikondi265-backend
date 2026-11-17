@@ -60,14 +60,6 @@ export default function LikesScreen() {
   return (
     <Shell>
       <Header title="Likes" back={false} />
-      <View style={[styles.hero, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Feather name="heart" size={20} color={colors.primary} />
-        <Text style={[styles.heroTitle, { color: colors.foreground }]}>People who chose you</Text>
-        <Text style={[styles.heroCopy, { color: colors.mutedForeground }]}>
-          Incoming likes refresh while this screen is open.
-        </Text>
-      </View>
-
       {likesQuery.isPending ? (
         <View style={styles.state}><ActivityIndicator color={colors.primary} /></View>
       ) : likesQuery.isError ? (
@@ -79,7 +71,7 @@ export default function LikesScreen() {
         </View>
       ) : people.length === 0 ? (
         <View style={styles.state}>
-          <Feather name="heart" size={22} color={colors.mutedForeground} />
+          <Feather name="heart" size={24} color={colors.mutedForeground} />
           <Text style={[styles.stateCopy, { color: colors.mutedForeground }]}>
             New likes from active profiles will appear here.
           </Text>
@@ -92,17 +84,31 @@ export default function LikesScreen() {
           {people.map(({ action, profile }) => {
             const busy = actingOn === profile.userId;
             return (
-              <View key={profile.userId} style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Pressable
+                key={profile.userId}
+                accessibilityRole="button"
+                accessibilityLabel={`View ${profile.displayName}'s profile`}
+                android_ripple={{ color: colors.ripple }}
+                onPress={() => router.push({ pathname: '/discover/[id]', params: { id: profile.userId } })}
+                style={styles.row}
+                testID={`incoming-like-${profile.userId}`}
+              >
                 <PhotoAvatar
                   photo={profile.photoUrl ?? profile.photoId ?? defaultAvatarForUser(profile.userId)}
-                  size={56}
+                  size={52}
                 />
                 <View style={styles.copy}>
-                  <Text style={[styles.name, { color: colors.foreground }]}>{profile.displayName}, {profile.age}</Text>
-                  <Text style={[styles.meta, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  <View style={styles.titleRow}>
+                    <Text style={[styles.name, { color: colors.onSurface }]} numberOfLines={1}>
+                      {profile.displayName}, {profile.age}
+                    </Text>
+                    <Text style={[styles.likeType, { color: colors.onSurfaceVariant }]}>
+                      {action === 'super' ? 'Super like' : 'Like'}
+                    </Text>
+                  </View>
+                  <Text style={[styles.meta, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
                     {profile.city} · {getIntentionLabel(profile.intention)}
                   </Text>
-                  {action === 'super' ? <Text style={[styles.super, { color: colors.primary }]}>Super like</Text> : null}
                 </View>
                 <Pressable
                   accessibilityRole="button"
@@ -112,7 +118,7 @@ export default function LikesScreen() {
                   style={[styles.action, { backgroundColor: colors.primary, opacity: actingOn && !busy ? 0.5 : 1 }]}
                   testID={`like-back-${profile.userId}`}
                 >
-                  {busy ? <ActivityIndicator size="small" color="#fff" /> : <Feather name="heart" size={18} color="#fff" />}
+                  {busy ? <ActivityIndicator size="small" color={colors.primaryForeground} /> : <Feather name="heart" size={20} color={colors.primaryForeground} />}
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -124,7 +130,8 @@ export default function LikesScreen() {
                 >
                   <Feather name="x" size={20} color={colors.mutedForeground} />
                 </Pressable>
-              </View>
+                <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+              </Pressable>
             );
           })}
         </>
@@ -134,17 +141,16 @@ export default function LikesScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { borderRadius: 24, padding: 20, borderWidth: 1, marginBottom: 18 },
-  heroTitle: { fontFamily: 'Inter_700Bold', fontSize: 23, marginTop: 10 },
-  heroCopy: { fontSize: 13, lineHeight: 20, marginTop: 6 },
-  count: { fontFamily: 'Inter_700Bold', fontSize: 17, marginBottom: 12 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 18, borderWidth: 1, marginBottom: 10 },
+  count: { fontFamily: 'Inter_600SemiBold', fontSize: 13, marginBottom: 4, paddingHorizontal: 16 },
+  row: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12, position: 'relative' },
   copy: { flex: 1, minWidth: 0 },
-  name: { fontFamily: 'Inter_700Bold', fontSize: 14 },
-  meta: { fontSize: 12, marginTop: 4 },
-  super: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 4 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  name: { flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 16 },
+  likeType: { fontSize: 12 },
+  meta: { fontSize: 14, marginTop: 4 },
   action: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   pass: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  divider: { position: 'absolute', left: 72, right: 0, bottom: 0, height: 1 },
   state: { minHeight: 200, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20 },
   stateCopy: { fontSize: 14, lineHeight: 21, textAlign: 'center' },
 });

@@ -385,15 +385,19 @@ export async function customFetch<T = unknown>(
     if (_debugLogging) {
       const errorName =
         error instanceof Error ? error.name : "UnknownError";
-      const wasAborted = errorName === "AbortError";
-      const log = wasAborted ? console.info : console.error;
-      log(wasAborted ? "[api-client] Request cancelled" : "[api-client] Network request failed", {
-        method,
-        url: getSafeLogUrl(requestInfo.url),
-        durationMs: Date.now() - startedAt,
-        errorName,
-        errorMessage: error instanceof Error ? error.message : String(error),
-      });
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const wasAborted =
+        errorName === "AbortError" || errorMessage.includes("canceled");
+      if (!wasAborted) {
+        console.error("[api-client] Network request failed", {
+          method,
+          url: getSafeLogUrl(requestInfo.url),
+          durationMs: Date.now() - startedAt,
+          errorName,
+          errorMessage,
+        });
+      }
     }
     throw error;
   }

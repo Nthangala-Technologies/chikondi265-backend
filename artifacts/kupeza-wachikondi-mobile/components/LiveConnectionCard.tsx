@@ -5,7 +5,6 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { UnlockChatButton } from '@/components/UnlockChatButton';
 import { defaultAvatarForUser } from '@/components/AppProvider';
-import { useAuth } from '@/components/AuthProvider';
 import { PhotoAvatar } from '@/components/ui';
 import { useColors } from '@/hooks/useColors';
 
@@ -16,120 +15,132 @@ type Props = {
 
 export function LiveConnectionCard({ connection, mode }: Props) {
   const colors = useColors();
-  const { account } = useAuth();
   const profile = connection.otherProfile;
   const chatEnabled = connection.chatEnabledAt !== null;
   const name = profile?.displayName ?? 'Profile unavailable';
-  const messagePreview = connection.lastMessage
-    ? connection.lastMessage.senderUserId === account?.userId
-      ? `You: ${connection.lastMessage.body}`
-      : connection.lastMessage.body
-    : null;
+  const preview = connection.lastMessage?.body ?? (chatEnabled ? 'Say hi' : 'Unlock chat to start messaging');
   const messageTime = connection.lastMessage
     ? formatLastMessageTime(connection.lastMessage.createdAt)
-    : null;
+    : '';
+  const openChat = () => {
+    if (!profile || !chatEnabled) return;
+    router.push({
+      pathname: '/chat/[matchId]',
+      params: { matchId: connection.id },
+    });
+  };
 
-  const content = (
-    <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+  const row = (
+    <View style={styles.row}>
       {profile ? (
         <PhotoAvatar
           photo={profile.photoUrl ?? profile.photoId ?? defaultAvatarForUser(profile.userId)}
-          size={46}
+          size={52}
         />
-        ) : (
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Feather name="user" size={20} color="#fff" />
+      ) : (
+        <View style={[styles.avatar, { backgroundColor: colors.surfaceVariant }]}>
+          <Feather name="user" size={20} color={colors.onSurfaceVariant} />
         </View>
       )}
       <View style={styles.copy}>
-        <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{name}</Text>
-        <View style={styles.previewRow}>
-          <Text
-            style={[styles.status, { color: colors.mutedForeground }]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {mode === 'messages'
-              ? chatEnabled
-                ? messagePreview ?? 'No messages yet'
-                : 'Unlock chat — MWK 5,000'
-              : chatEnabled
-                ? 'Chat unlocked'
-                : 'You matched'}
+        <View style={styles.titleRow}>
+          <Text style={[styles.name, { color: colors.onSurface }]} numberOfLines={1}>
+            {name}
           </Text>
-          {mode === 'messages' && chatEnabled && messageTime ? (
-            <Text style={[styles.timestamp, { color: colors.mutedForeground }]}>
+          {messageTime ? (
+            <Text style={[styles.timestamp, { color: colors.onSurfaceVariant }]}>
               {messageTime}
             </Text>
           ) : null}
         </View>
+        <Text
+          style={[
+            styles.preview,
+            { color: colors.onSurfaceVariant },
+            !connection.lastMessage && styles.emptyPreview,
+          ]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {preview}
+        </Text>
       </View>
       {mode === 'matches' ? (
         <UnlockChatButton
           connectionId={connection.id}
           chatEnabled={chatEnabled}
           disabled={!profile}
-          onOpenChat={() =>
-            router.push({
-              pathname: '/chat/[matchId]',
-              params: { matchId: connection.id },
-            })
-          }
+          onOpenChat={openChat}
           testID={`button-chat-${connection.id}`}
           compact
         />
-      ) : (
-        <Feather name={chatEnabled ? 'chevron-right' : 'lock'} size={18} color={colors.mutedForeground} />
-      )}
+      ) : !chatEnabled ? (
+        <Feather name="lock" size={20} color={colors.onSurfaceVariant} />
+      ) : null}
+      <View style={[styles.divider, { backgroundColor: colors.divider }]} />
     </View>
   );
 
-  if (mode === 'matches') return content;
+  if (mode === 'matches') return row;
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => profile && router.push({ pathname: '/chat/[matchId]', params: { matchId: connection.id } })}
+      accessibilityLabel={`${name}, ${preview}`}
+      android_ripple={{ color: colors.ripple }}
+      onPress={openChat}
       disabled={!profile}
       testID={`button-message-${connection.id}`}
     >
-      {content}
+      {row}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 74,
+    minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    padding: 12,
-    borderRadius: 17,
-    borderWidth: 1,
-    marginBottom: 10,
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    position: 'relative',
   },
-  avatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-  copy: { flex: 1, minWidth: 0 },
-  name: { fontFamily: 'Inter_700Bold', fontSize: 15 },
-  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  status: { flex: 1, minWidth: 0, fontSize: 12, lineHeight: 17 },
-  timestamp: { fontSize: 10, lineHeight: 15 },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  copy: { flex: 1, minWidth: 0, gap: 4 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  name: { flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 16 },
+  timestamp: { fontSize: 12 },
+  preview: { fontSize: 14, lineHeight: 18 },
+  emptyPreview: { fontStyle: 'italic' },
+  divider: { position: 'absolute', left: 72, right: 0, bottom: 0, height: 1 },
 });
 
 function formatLastMessageTime(value: string): string {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return '';
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-  if (sameDay) {
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const elapsed = Math.max(0, Date.now() - date.getTime());
+  const minutes = Math.floor(elapsed / 60_000);
+  if (minutes < 1) return 'now';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24 && date.toDateString() === new Date().toDateString()) {
+    return `${hours}h`;
   }
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  const elapsedDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
-  if (elapsedDays < 7) {
-    return date.toLocaleDateString([], { weekday: 'short' });
-  }
+  if (elapsed < 7 * 86_400_000) return date.toLocaleDateString([], { weekday: 'short' });
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
