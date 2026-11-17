@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Keyboard, LayoutChangeEvent, Platform, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+import { Keyboard, LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import type { BottomTabBarProps } from 'expo-router/tabs';
 import { Feather } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming, withSequence } from 'react-native-reanimated';
 import { useColors } from '@/hooks/useColors';
+import { useTheme } from '@/components/ThemeProvider';
 
 export const TAB_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   index: 'compass', likes: 'heart', matches: 'users', messages: 'message-circle', profile: 'user',
@@ -60,7 +61,8 @@ function TabItem({ label, icon, focused, onPress, onLongPress, accessibilityLabe
 
 export function AnimatedTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
   const colors = useColors();
-  const dark = useColorScheme() === 'dark';
+  const { scheme } = useTheme();
+  const dark = scheme === 'dark';
   const insets = useSafeAreaInsets();
   const reduce = useReducedMotion();
   const web = Platform.OS === 'web';

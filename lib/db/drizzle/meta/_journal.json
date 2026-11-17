@@ -36,6 +36,13 @@
       "when": 1794834489817,
       "tag": "0004_add_username",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794913451030,
+      "tag": "0005_material_silver_fox",
+      "breakpoints": true
     }
   ]
 }

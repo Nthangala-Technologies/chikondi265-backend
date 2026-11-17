@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import {
   check,
   index,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -26,6 +27,10 @@ export const messagesTable = pgTable(
       .references(() => usersTable.id),
     clientMessageId: uuid("client_message_id").notNull(),
     body: varchar("body", { length: 2000 }).notNull(),
+    deletedForUserIds: jsonb("deleted_for_user_ids")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -41,6 +46,10 @@ export const messagesTable = pgTable(
       table.createdAt,
       table.id,
     ),
+    index("messages_deleted_for_user_ids_gin_idx").using(
+      "gin",
+      table.deletedForUserIds,
+    ),
     check(
       "messages_body_not_blank_check",
       sql`length(trim(${table.body})) > 0`,
@@ -52,6 +61,7 @@ export const insertMessageSchema = createInsertSchema(messagesTable).omit({
   id: true,
   createdAt: true,
   readAt: true,
+  deletedForUserIds: true,
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;

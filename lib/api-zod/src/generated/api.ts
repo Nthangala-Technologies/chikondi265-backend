@@ -714,6 +714,64 @@ export const CreateConnectionMessageResponse = zod.object({
 
 
 /**
+ * @summary Clear messages for the current user or both participants
+ */
+export const ClearConnectionMessagesParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const ClearConnectionMessagesBody = zod.object({
+  "scope": zod.enum(['me', 'everyone'])
+})
+
+export const ClearConnectionMessagesResponse = zod.object({
+  "changed": zod.literal(true)
+})
+
+
+/**
+ * @summary Edit a message sent by the caller within two hours
+ */
+export const EditConnectionMessageParams = zod.object({
+  "messageId": zod.coerce.string().uuid()
+})
+
+export const editConnectionMessageBodyBodyMax = 2000;
+
+
+
+export const EditConnectionMessageBody = zod.object({
+  "body": zod.string().min(1).max(editConnectionMessageBodyBodyMax)
+})
+
+export const EditConnectionMessageResponse = zod.object({
+  "id": zod.string().uuid(),
+  "connectionId": zod.string().uuid(),
+  "senderUserId": zod.string().uuid(),
+  "clientMessageId": zod.string().uuid(),
+  "body": zod.string(),
+  "createdAt": zod.string().datetime({"offset":true}),
+  "readAt": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
+ * @summary Hide a message for the caller or delete it for both participants
+ */
+export const DeleteConnectionMessageParams = zod.object({
+  "messageId": zod.coerce.string().uuid()
+})
+
+export const DeleteConnectionMessageBody = zod.object({
+  "scope": zod.enum(['me', 'everyone'])
+})
+
+export const DeleteConnectionMessageResponse = zod.object({
+  "changed": zod.literal(true)
+})
+
+
+/**
  * @summary Get the next older page of connection messages
  */
 export const getConnectionMessagesAfterCursorPathCursorMax = 512;

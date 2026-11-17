@@ -40,10 +40,13 @@ import type {
   DiscoveryPage,
   DiscoveryPreferences,
   DiscoveryPreferencesInput,
+  EditConnectionMessageInput,
   GetDiscoveryParams,
   HealthStatus,
   IncomingLikesResponse,
   LoginAccountInput,
+  MessageActionResponse,
+  MessageDeletionScopeInput,
   NotificationsResponse,
   PayChanguWebhookInput,
   PayChanguWebhookResponse,
@@ -2541,6 +2544,273 @@ export const useCreateConnectionMessage = <TError = ErrorType<ApiErrorEnvelope>,
         TContext
       > => {
       return useMutation(getCreateConnectionMessageMutationOptions(options), queryClient);
+    }
+
+export const getClearConnectionMessagesUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/connections/${id}/messages`
+}
+
+/**
+ * @summary Clear messages for the current user or both participants
+ */
+export const clearConnectionMessages = async (id: string,
+    messageDeletionScopeInput: MessageDeletionScopeInput, options?: Parameters<typeof customFetch>[1]): Promise<MessageActionResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MessageActionResponse>(getClearConnectionMessagesUrl(id),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(messageDeletionScopeInput)
+  }
+);}
+
+
+
+
+
+export const getClearConnectionMessagesMutationKey = () => ['clearConnectionMessages'] as const;
+
+export const getClearConnectionMessagesMutationOptions = <TError = ErrorType<ApiErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearConnectionMessages>>, TError,ClearConnectionMessagesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clearConnectionMessages>>, TError,ClearConnectionMessagesMutationVariables, TContext> => {
+
+const mutationKey = getClearConnectionMessagesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clearConnectionMessages>>, ClearConnectionMessagesMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  clearConnectionMessages(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClearConnectionMessagesMutationResult = NonNullable<Awaited<ReturnType<typeof clearConnectionMessages>>>
+    export type ClearConnectionMessagesMutationBody = BodyType<MessageDeletionScopeInput>
+    export type ClearConnectionMessagesMutationError = ErrorType<ApiErrorEnvelope>
+    export type ClearConnectionMessagesMutationVariables = {id: string;data: BodyType<MessageDeletionScopeInput>}
+
+    /**
+ * @summary Clear messages for the current user or both participants
+ */
+export const useClearConnectionMessages = <TError = ErrorType<ApiErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearConnectionMessages>>, TError,ClearConnectionMessagesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof clearConnectionMessages>>,
+        TError,
+        ClearConnectionMessagesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getClearConnectionMessagesMutationOptions(options), queryClient);
+    }
+
+export const getEditConnectionMessageUrl = (messageId: string,) => {
+
+
+
+
+  return `/api/v1/messages/${messageId}`
+}
+
+/**
+ * @summary Edit a message sent by the caller within two hours
+ */
+export const editConnectionMessage = async (messageId: string,
+    editConnectionMessageInput: EditConnectionMessageInput, options?: Parameters<typeof customFetch>[1]): Promise<ConnectionMessage> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ConnectionMessage>(getEditConnectionMessageUrl(messageId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(editConnectionMessageInput)
+  }
+);}
+
+
+
+
+
+export const getEditConnectionMessageMutationKey = () => ['editConnectionMessage'] as const;
+
+export const getEditConnectionMessageMutationOptions = <TError = ErrorType<ApiErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof editConnectionMessage>>, TError,EditConnectionMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof editConnectionMessage>>, TError,EditConnectionMessageMutationVariables, TContext> => {
+
+const mutationKey = getEditConnectionMessageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof editConnectionMessage>>, EditConnectionMessageMutationVariables> = (props) => {
+          const {messageId,data} = props ?? {};
+
+          return  editConnectionMessage(messageId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EditConnectionMessageMutationResult = NonNullable<Awaited<ReturnType<typeof editConnectionMessage>>>
+    export type EditConnectionMessageMutationBody = BodyType<EditConnectionMessageInput>
+    export type EditConnectionMessageMutationError = ErrorType<ApiErrorEnvelope>
+    export type EditConnectionMessageMutationVariables = {messageId: string;data: BodyType<EditConnectionMessageInput>}
+
+    /**
+ * @summary Edit a message sent by the caller within two hours
+ */
+export const useEditConnectionMessage = <TError = ErrorType<ApiErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof editConnectionMessage>>, TError,EditConnectionMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof editConnectionMessage>>,
+        TError,
+        EditConnectionMessageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getEditConnectionMessageMutationOptions(options), queryClient);
+    }
+
+export const getDeleteConnectionMessageUrl = (messageId: string,) => {
+
+
+
+
+  return `/api/v1/messages/${messageId}`
+}
+
+/**
+ * @summary Hide a message for the caller or delete it for both participants
+ */
+export const deleteConnectionMessage = async (messageId: string,
+    messageDeletionScopeInput: MessageDeletionScopeInput, options?: Parameters<typeof customFetch>[1]): Promise<MessageActionResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<MessageActionResponse>(getDeleteConnectionMessageUrl(messageId),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(messageDeletionScopeInput)
+  }
+);}
+
+
+
+
+
+export const getDeleteConnectionMessageMutationKey = () => ['deleteConnectionMessage'] as const;
+
+export const getDeleteConnectionMessageMutationOptions = <TError = ErrorType<ApiErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteConnectionMessage>>, TError,DeleteConnectionMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteConnectionMessage>>, TError,DeleteConnectionMessageMutationVariables, TContext> => {
+
+const mutationKey = getDeleteConnectionMessageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteConnectionMessage>>, DeleteConnectionMessageMutationVariables> = (props) => {
+          const {messageId,data} = props ?? {};
+
+          return  deleteConnectionMessage(messageId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteConnectionMessageMutationResult = NonNullable<Awaited<ReturnType<typeof deleteConnectionMessage>>>
+    export type DeleteConnectionMessageMutationBody = BodyType<MessageDeletionScopeInput>
+    export type DeleteConnectionMessageMutationError = ErrorType<ApiErrorEnvelope>
+    export type DeleteConnectionMessageMutationVariables = {messageId: string;data: BodyType<MessageDeletionScopeInput>}
+
+    /**
+ * @summary Hide a message for the caller or delete it for both participants
+ */
+export const useDeleteConnectionMessage = <TError = ErrorType<ApiErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteConnectionMessage>>, TError,DeleteConnectionMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteConnectionMessage>>,
+        TError,
+        DeleteConnectionMessageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteConnectionMessageMutationOptions(options), queryClient);
     }
 
 export const getGetConnectionMessagesAfterCursorUrl = (id: string,

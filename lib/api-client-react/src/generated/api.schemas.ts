@@ -561,6 +561,30 @@ export interface CreateConnectionMessageInput {
   clientMessageId: string;
 }
 
+export interface EditConnectionMessageInput {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  body: string;
+}
+
+export type MessageDeletionScopeInputScope = typeof MessageDeletionScopeInputScope[keyof typeof MessageDeletionScopeInputScope];
+
+
+export const MessageDeletionScopeInputScope = {
+  me: 'me',
+  everyone: 'everyone',
+} as const;
+
+export interface MessageDeletionScopeInput {
+  scope: MessageDeletionScopeInputScope;
+}
+
+export interface MessageActionResponse {
+  changed: true;
+}
+
 export interface ConnectionMessage {
   id: string;
   connectionId: string;

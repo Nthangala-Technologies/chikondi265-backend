@@ -3,6 +3,10 @@ import {
   createConnectionMessage,
   getConnectionMessagesAfterCursor,
   getGetConnectionMessagesQueryKey,
+  useClearConnectionMessages,
+  useCreateBlock,
+  useDeleteConnectionMessage,
+  useEditConnectionMessage,
   useGetConnection,
   useGetConnectionMessages,
   type ConnectionMessage,
@@ -10,9 +14,10 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
+import * as ScreenCapture from 'expo-screen-capture';
+import { ActivityIndicator, Alert, FlatList, Keyboard, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useApp, getProfile, ChatMessage } from '@/components/AppProvider';
 import { getStoredSessionToken, useAuth } from '@/components/AuthProvider';
 import { friendlyApiError, useErrorModal } from '@/components/ErrorModal';
@@ -30,6 +35,10 @@ export default function ChatScreen() {
   const { account } = useAuth();
   const { showError } = useErrorModal();
   const queryClient = useQueryClient();
+  const clearMessagesMutation = useClearConnectionMessages();
+  const deleteMessageMutation = useDeleteConnectionMessage();
+  const editMessageMutation = useEditConnectionMessage();
+  const blockMutation = useCreateBlock();
   const connectionQuery = useGetConnection(matchId ?? '', {
     query: { enabled: USE_LIVE_API && Boolean(matchId) },
   });
@@ -39,6 +48,9 @@ export default function ChatScreen() {
   const [socketFallbackActive, setSocketFallbackActive] = useState(false);
   const [sending, setSending] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<ConnectionMessage | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
   const messagesQuery = useGetConnectionMessages(matchId ?? '', {
     query: {
       enabled: chatEnabled,
@@ -51,6 +63,37 @@ export default function ChatScreen() {
   const messages = match ? chats[match.id] ?? [] : [];
   const input = useRef<TextInputInstance>(null);
   const conversationId = matchId ?? '';
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const showToast = useCallback((message: string) => {
+    setToastMessage(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMessage(''), 2600);
+  }, []);
+
+  const removeMessageFromCache = useCallback(
+    (messageId: string) => {
+      queryClient.setQueryData<ConnectionMessagePage>(
+        getGetConnectionMessagesQueryKey(conversationId),
+        (current) =>
+          current
+            ? { ...current, items: current.items.filter((item) => item.id !== messageId) }
+            : current,
+      );
+    },
+    [conversationId, queryClient],
+  );
+
+  const clearMessagesFromCache = useCallback(() => {
+    queryClient.setQueryData<ConnectionMessagePage>(
+      getGetConnectionMessagesQueryKey(conversationId),
+      { items: [], nextCursor: null },
+    );
+  }, [conversationId, queryClient]);
+
+  const refreshChatData = useCallback(() => {
+    void queryClient.invalidateQueries({ refetchType: 'active' });
+  }, [queryClient]);
 
   const appendMessage = useCallback(
     (message: ConnectionMessage) => {
@@ -84,6 +127,198 @@ export default function ChatScreen() {
     },
     [conversationId, queryClient],
   );
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    void ScreenCapture.preventScreenCaptureAsync('private-chat').catch(() => undefined);
+    return () => {
+      void ScreenCapture.allowScreenCaptureAsync('private-chat').catch(() => undefined);
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
+
+  const performDelete = useCallback(
+    async (message: ConnectionMessage, scope: 'me' | 'everyone') => {
+      if (Date.now() - new Date(message.createdAt).getTime() > 2 * 60 * 60 * 1000) {
+        showToast('Messages older than 2 hours cannot be deleted.');
+        return;
+      }
+      try {
+        await deleteMessageMutation.mutateAsync({
+          messageId: message.id,
+          data: { scope },
+        });
+        removeMessageFromCache(message.id);
+        refreshChatData();
+      } catch (error) {
+        showError(
+          friendlyApiError(error, 'We couldn’t delete this message. Check your connection and try again.'),
+          'Message not deleted',
+        );
+      }
+    },
+    [deleteMessageMutation, refreshChatData, removeMessageFromCache, showError, showToast],
+  );
+
+  const showMessageActions = useCallback(
+    (message: ConnectionMessage) => {
+      if (Date.now() - new Date(message.createdAt).getTime() > 2 * 60 * 60 * 1000) {
+        showToast('Messages older than 2 hours cannot be deleted.');
+        return;
+      }
+      const isSender = message.senderUserId === account?.userId;
+      const actions = [
+        ...(isSender
+          ? [
+              {
+                text: 'Edit message',
+                onPress: () => {
+                  setEditingMessage(message);
+                  setEditDraft(message.body);
+                },
+              },
+            ]
+          : []),
+        {
+          text: 'Delete for me',
+          style: 'destructive' as const,
+          onPress: () => void performDelete(message, 'me'),
+        },
+        ...(isSender
+          ? [
+              {
+                text: 'Delete for everyone',
+                style: 'destructive' as const,
+                onPress: () => void performDelete(message, 'everyone'),
+              },
+            ]
+          : []),
+        { text: 'Cancel', style: 'cancel' as const },
+      ];
+      Alert.alert('Message options', 'Choose an action for this message.', actions);
+    },
+    [account?.userId, performDelete, showToast],
+  );
+
+  const performClear = useCallback(
+    async (scope: 'me' | 'everyone') => {
+      if (!conversationId) return;
+      try {
+        await clearMessagesMutation.mutateAsync({
+          id: conversationId,
+          data: { scope },
+        });
+        clearMessagesFromCache();
+        refreshChatData();
+      } catch (error) {
+        showError(
+          friendlyApiError(error, 'We couldn’t clear this chat. Check your connection and try again.'),
+          'Chat not cleared',
+        );
+      }
+    },
+    [clearMessagesMutation, clearMessagesFromCache, conversationId, refreshChatData, showError],
+  );
+
+  const confirmClearChat = useCallback(() => {
+    Alert.alert(
+      'Clear chat?',
+      'Choose whether to remove this chat from your history or for both participants.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear for me',
+          style: 'destructive',
+          onPress: () => void performClear('me'),
+        },
+        {
+          text: 'Clear for everyone',
+          style: 'destructive',
+          onPress: () => void performClear('everyone'),
+        },
+      ],
+    );
+  }, [performClear]);
+
+  const blockOtherUser = useCallback(() => {
+    const otherUserId = connectionQuery.data?.otherProfile?.userId;
+    if (!otherUserId) return;
+    Alert.alert(
+      'Block this person?',
+      'You will no longer see each other in discovery or be able to use this chat.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block user',
+          style: 'destructive',
+          onPress: () => {
+            void blockMutation
+              .mutateAsync({ data: { blockedUserId: otherUserId } })
+              .then(() => {
+                refreshChatData();
+                router.back();
+              })
+              .catch((error) =>
+                showError(
+                  friendlyApiError(error, 'We couldn’t block this person. Please try again.'),
+                  'Could not block user',
+                ),
+              );
+          },
+        },
+      ],
+    );
+  }, [blockMutation, connectionQuery.data?.otherProfile?.userId, refreshChatData, showError]);
+
+  const showChatActions = useCallback(() => {
+    const otherProfile = connectionQuery.data?.otherProfile;
+    const choices = [
+      { text: 'Clear Chat', onPress: confirmClearChat },
+      { text: 'Block User', style: 'destructive' as const, onPress: blockOtherUser },
+      ...(otherProfile
+        ? [
+            {
+              text: 'Report User',
+              onPress: () =>
+                router.push({
+                  pathname: '/report',
+                  params: {
+                    userId: otherProfile.userId,
+                    connectionId: conversationId,
+                  },
+                }),
+            },
+          ]
+        : []),
+      { text: 'Cancel', style: 'cancel' as const },
+    ];
+    Alert.alert('Chat options', undefined, choices);
+  }, [blockOtherUser, confirmClearChat, connectionQuery.data?.otherProfile, conversationId]);
+
+  const saveEditedMessage = useCallback(async () => {
+    if (!editingMessage || !editDraft.trim()) return;
+    try {
+      const updated = await editMessageMutation.mutateAsync({
+        messageId: editingMessage.id,
+        data: { body: editDraft.trim() },
+      });
+      appendMessage(updated);
+      setEditingMessage(null);
+      setEditDraft('');
+      refreshChatData();
+    } catch (error) {
+      showError(
+        friendlyApiError(error, 'We couldn’t update this message. Check your connection and try again.'),
+        'Message not updated',
+      );
+    }
+  }, [appendMessage, editDraft, editMessageMutation, editingMessage, refreshChatData, showError]);
 
   useEffect(() => {
     if (!chatEnabled || !conversationId || !API_BASE_URL) {
@@ -127,6 +362,9 @@ export default function ChatScreen() {
             const frame = JSON.parse(String(event.data)) as {
               type?: string;
               message?: ConnectionMessage;
+              messageId?: string;
+              scope?: 'me' | 'everyone';
+              userId?: string;
             };
             if (frame.type === 'ready') {
               retryDelay = 1_000;
@@ -135,6 +373,17 @@ export default function ChatScreen() {
               setSocketFallbackActive(false);
             } else if (frame.type === 'message' && frame.message) {
               appendMessage(frame.message);
+            } else if (
+              frame.type === 'message-deleted' &&
+              frame.messageId &&
+              (frame.scope === 'everyone' || frame.userId === account?.userId)
+            ) {
+              removeMessageFromCache(frame.messageId);
+            } else if (
+              frame.type === 'chat-cleared' &&
+              (frame.scope === 'everyone' || frame.userId === account?.userId)
+            ) {
+              clearMessagesFromCache();
             }
           } catch {
             // Ignore malformed frames; the timed polling fallback remains available.
@@ -163,7 +412,14 @@ export default function ChatScreen() {
       if (fallbackTimer) clearTimeout(fallbackTimer);
       socket?.close();
     };
-  }, [appendMessage, chatEnabled, conversationId]);
+  }, [
+    account?.userId,
+    appendMessage,
+    chatEnabled,
+    clearMessagesFromCache,
+    conversationId,
+    removeMessageFromCache,
+  ]);
 
   const sendLiveMessage = async () => {
     const body = text.trim();
@@ -303,8 +559,22 @@ export default function ChatScreen() {
     }
 
     return (
-      <Shell>
-        <Header title={title} back />
+      <Shell scroll={false}>
+        <Header
+          title={title}
+          back
+          right={
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Chat options"
+              onPress={showChatActions}
+              style={styles.headerAction}
+              hitSlop={10}
+            >
+              <Feather name="more-horizontal" size={21} color={colors.foreground} />
+            </Pressable>
+          }
+        />
         <KeyboardAvoidingView style={styles.root} behavior="padding">
           {messagesQuery.data?.nextCursor ? (
             <Pressable
@@ -331,9 +601,13 @@ export default function ChatScreen() {
               </Text>
             }
             renderItem={({ item }) => {
-              const outgoing = item.senderUserId !== otherProfile?.userId;
+              const outgoing = item.senderUserId === account?.userId;
               return (
-                <View
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${outgoing ? 'Your' : title}'s message. Hold for options.`}
+                  onLongPress={() => showMessageActions(item)}
+                  delayLongPress={350}
                   style={[
                     styles.bubble,
                     outgoing
@@ -341,12 +615,7 @@ export default function ChatScreen() {
                       : [styles.incoming, { backgroundColor: colors.card }],
                   ]}
                 >
-                  <Text
-                    style={{
-                      color: outgoing ? '#fff' : colors.foreground,
-                      lineHeight: 20,
-                    }}
-                  >
+                  <Text style={{ color: outgoing ? '#fff' : colors.foreground, lineHeight: 20 }}>
                     {item.body}
                   </Text>
                   <Text
@@ -354,6 +623,7 @@ export default function ChatScreen() {
                       color: outgoing ? 'rgba(255,255,255,0.65)' : colors.mutedForeground,
                       fontSize: 10,
                       marginTop: 4,
+                      textAlign: 'right',
                     }}
                   >
                     {new Date(item.createdAt).toLocaleTimeString([], {
@@ -361,7 +631,7 @@ export default function ChatScreen() {
                       minute: '2-digit',
                     })}
                   </Text>
-                </View>
+                </Pressable>
               );
             }}
           />
@@ -399,6 +669,67 @@ export default function ChatScreen() {
             </Pressable>
           </View>
         </KeyboardAvoidingView>
+        {toastMessage ? (
+          <View accessibilityLiveRegion="polite" pointerEvents="none" style={styles.toast}>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+        ) : null}
+        <Modal
+          transparent
+          animationType="fade"
+          visible={Boolean(editingMessage)}
+          onRequestClose={() => setEditingMessage(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.editModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.editTitle, { color: colors.foreground }]}>Edit message</Text>
+              <TextInput
+                value={editDraft}
+                onChangeText={setEditDraft}
+                multiline
+                maxLength={2000}
+                autoFocus
+                placeholder="Write your message"
+                placeholderTextColor={colors.mutedForeground}
+                style={[
+                  styles.editInput,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                  },
+                ]}
+              />
+              <View style={styles.editActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setEditingMessage(null);
+                    setEditDraft('');
+                  }}
+                  style={styles.editAction}
+                >
+                  <Text style={{ color: colors.mutedForeground, fontFamily: 'Inter_600SemiBold' }}>
+                    Cancel
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={!editDraft.trim() || editMessageMutation.isPending}
+                  onPress={() => void saveEditedMessage()}
+                  style={[
+                    styles.saveEditAction,
+                    { backgroundColor: colors.primary, opacity: !editDraft.trim() || editMessageMutation.isPending ? 0.55 : 1 },
+                  ]}
+                >
+                  <Text style={{ color: colors.primaryForeground, fontFamily: 'Inter_600SemiBold' }}>
+                    {editMessageMutation.isPending ? 'Saving…' : 'Save'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </Shell>
     );
   }
@@ -414,4 +745,51 @@ function createClientMessageId(): string {
     return (character === 'x' ? random : (random & 0x3) | 0x8).toString(16);
   });
 }
-const styles = StyleSheet.create({ root: { flex: 1 }, list: { paddingHorizontal: 18, paddingBottom: 10 }, bubble: { maxWidth: '80%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18, marginBottom: 10 }, incoming: { alignSelf: 'flex-start', borderBottomLeftRadius: 5 }, outgoing: { alignSelf: 'flex-end', backgroundColor: '#bd5578', borderBottomRightRadius: 5 }, composer: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1 }, field: { flex: 1, minHeight: 44, fontSize: 14, paddingHorizontal: 8 }, send: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' } });
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  list: { paddingHorizontal: 18, paddingBottom: 10 },
+  bubble: { maxWidth: '80%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18, marginBottom: 10 },
+  incoming: { alignSelf: 'flex-start', borderBottomLeftRadius: 5 },
+  outgoing: { alignSelf: 'flex-end', backgroundColor: '#bd5578', borderBottomRightRadius: 5 },
+  composer: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1 },
+  field: { flex: 1, minHeight: 44, fontSize: 14, paddingHorizontal: 8 },
+  send: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  headerAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  toast: {
+    position: 'absolute',
+    bottom: 24,
+    alignSelf: 'center',
+    maxWidth: '92%',
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 14,
+    backgroundColor: '#2d2332',
+  },
+  toastText: { color: '#fff', fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 22,
+    backgroundColor: 'rgba(15, 12, 19, 0.48)',
+  },
+  editModal: {
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 20,
+    gap: 14,
+  },
+  editTitle: { fontFamily: 'Inter_700Bold', fontSize: 19 },
+  editInput: {
+    minHeight: 120,
+    maxHeight: 220,
+    borderWidth: 1,
+    borderRadius: 15,
+    padding: 13,
+    fontSize: 15,
+    lineHeight: 21,
+    textAlignVertical: 'top',
+  },
+  editActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 10 },
+  editAction: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 },
+  saveEditAction: { minHeight: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, borderRadius: 13 },
+});

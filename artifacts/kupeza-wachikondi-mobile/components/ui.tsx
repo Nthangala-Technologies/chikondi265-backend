@@ -44,7 +44,14 @@ export function Brand({ light = false }: { light?: boolean }) {
   );
 }
 
-export function Header({ back }: { title?: string; back?: boolean }) {
+export function Header({
+  back,
+  right,
+}: {
+  title?: string;
+  back?: boolean;
+  right?: ReactNode;
+}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   return (
@@ -56,12 +63,16 @@ export function Header({ back }: { title?: string; back?: boolean }) {
         </Pressable>
       )}
       <View style={styles.headerSpacer} />
-      <Pressable
-        onPress={() => router.push('/notifications')}
-        style={styles.iconButton}
-      >
-        <Feather name="bell" size={19} color={colors.foreground} />
-      </Pressable>
+      {right ?? (
+        <Pressable
+          onPress={() => router.push('/notifications')}
+          style={styles.iconButton}
+          accessibilityRole="button"
+          accessibilityLabel="Notifications"
+        >
+          <Feather name="bell" size={19} color={colors.foreground} />
+        </Pressable>
+      )}
     </View>
   );
 }

@@ -229,6 +229,29 @@ export function publishConnectionMessage(
   }
 }
 
+export type ConnectionChatEvent =
+  | {
+      type: "message-deleted";
+      messageId: string;
+      scope: "me" | "everyone";
+      userId: string;
+    }
+  | {
+      type: "chat-cleared";
+      scope: "me" | "everyone";
+      userId: string;
+    };
+
+export function publishConnectionEvent(
+  connectionId: string,
+  event: ConnectionChatEvent,
+): void {
+  const payload = JSON.stringify(event);
+  for (const socket of rooms.get(connectionId) ?? []) {
+    if (socket.readyState === WebSocket.OPEN) socket.send(payload);
+  }
+}
+
 export function publishConnectionClosed(connectionId: string): void {
   for (const socket of rooms.get(connectionId) ?? []) {
     socket.close(4403, "Connection is closed");

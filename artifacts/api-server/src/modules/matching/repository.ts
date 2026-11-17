@@ -664,17 +664,27 @@ function otherParticipantId(userId: string) {
   end`;
 }
 
-const latestMessagePreview = sql<ConnectionView["lastMessage"]>`(
-  select json_build_object(
-    'body', ${messagesTable.body},
-    'senderUserId', ${messagesTable.senderUserId},
-    'createdAt', ${messagesTable.createdAt}
-  )
-  from ${messagesTable}
-  where ${messagesTable.connectionId} = ${connectionsTable.id}
-  order by ${messagesTable.createdAt} desc, ${messagesTable.id} desc
-  limit 1
-)`;
+function latestMessagePreview(userId: string) {
+  const clearedAt = sql`case
+    when ${connectionsTable.userLowId} = ${userId}
+    then ${connectionsTable.clearedAtUserLow}
+    else ${connectionsTable.clearedAtUserHigh}
+  end`;
+
+  return sql<ConnectionView["lastMessage"]>`(
+    select json_build_object(
+      'body', ${messagesTable.body},
+      'senderUserId', ${messagesTable.senderUserId},
+      'createdAt', ${messagesTable.createdAt}
+    )
+    from ${messagesTable}
+    where ${messagesTable.connectionId} = ${connectionsTable.id}
+      and not (${messagesTable.deletedForUserIds} @> ${JSON.stringify([userId])}::jsonb)
+      and (${clearedAt} is null or ${messagesTable.createdAt} > ${clearedAt})
+    order by ${messagesTable.createdAt} desc, ${messagesTable.id} desc
+    limit 1
+  )`;
+}
 
 export async function findConnectionsForUser(
   userId: string,
@@ -686,7 +696,7 @@ export async function findConnectionsForUser(
       matchedAt: connectionsTable.matchedAt,
       chatEnabledAt: connectionsTable.chatEnabledAt,
       otherUserId: otherParticipantId(userId),
-      lastMessage: latestMessagePreview,
+      lastMessage: latestMessagePreview(userId),
     })
     .from(connectionsTable)
     .where(
@@ -719,7 +729,7 @@ export async function findConnectionForUser(
       matchedAt: connectionsTable.matchedAt,
       chatEnabledAt: connectionsTable.chatEnabledAt,
       otherUserId: otherParticipantId(userId),
-      lastMessage: latestMessagePreview,
+      lastMessage: latestMessagePreview(userId),
     })
     .from(connectionsTable)
     .where(

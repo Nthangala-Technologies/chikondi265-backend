@@ -59,6 +59,8 @@ export const connectionsTable = pgTable(
       .notNull()
       .defaultNow(),
     chatEnabledAt: timestamp("chat_enabled_at", { withTimezone: true }),
+    clearedAtUserLow: timestamp("cleared_at_user_low", { withTimezone: true }),
+    clearedAtUserHigh: timestamp("cleared_at_user_high", { withTimezone: true }),
     closedAt: timestamp("closed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -100,6 +102,8 @@ export const insertConnectionSchema = createInsertSchema(connectionsTable).omit(
     id: true,
     matchedAt: true,
     chatEnabledAt: true,
+    clearedAtUserLow: true,
+    clearedAtUserHigh: true,
     closedAt: true,
     createdAt: true,
     updatedAt: true,

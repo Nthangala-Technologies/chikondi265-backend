@@ -75,9 +75,20 @@ export function UnlockChatButton({
         data: {},
       });
       const rawCheckoutUrl = result.checkoutUrl.trim();
-      const finalUrl = rawCheckoutUrl.startsWith('http')
+      const normalizedUrl = /^https?:\/\//i.test(rawCheckoutUrl)
         ? rawCheckoutUrl
         : `https://${rawCheckoutUrl}`;
+      const parsedUrl = new URL(normalizedUrl);
+      if (
+        !['https:', 'http:'].includes(parsedUrl.protocol) ||
+        !parsedUrl.hostname
+      ) {
+        throw new Error('The checkout link is not secure.');
+      }
+      const finalUrl = parsedUrl.toString();
+      if (parsedUrl.protocol === 'http:') {
+        console.warn('Opening a non-TLS PayChangu checkout URL.');
+      }
       // Do not log one-time checkout query values; they can authorize a payment session.
       const safeLogUrl = finalUrl.replace(/([?&][^=#]+)=([^&#]*)/g, '$1=[redacted]');
       console.log('OPENING PAYMENT URL:', safeLogUrl);

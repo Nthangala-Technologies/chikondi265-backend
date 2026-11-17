@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "jsEngine": "hermes",
-    "icon": "./assets/images/icon_2.png",
+    "icon": "./assets/images/chikondi-app-icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
@@ -28,7 +28,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/images/icon_2.png",
+      "favicon": "./assets/images/chikondi-app-icon.png",
       "output": "static"
     },
     "plugins": [

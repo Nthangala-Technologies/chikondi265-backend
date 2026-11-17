@@ -25,6 +25,9 @@ export function LiveConnectionCard({ connection, mode }: Props) {
       ? `You: ${connection.lastMessage.body}`
       : connection.lastMessage.body
     : null;
+  const messageTime = connection.lastMessage
+    ? formatLastMessageTime(connection.lastMessage.createdAt)
+    : null;
 
   const content = (
     <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -40,19 +43,26 @@ export function LiveConnectionCard({ connection, mode }: Props) {
       )}
       <View style={styles.copy}>
         <Text style={[styles.name, { color: colors.foreground }]} numberOfLines={1}>{name}</Text>
-        <Text
-          style={[styles.status, { color: colors.mutedForeground }]}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-        >
-          {mode === 'messages'
-            ? chatEnabled
-              ? messagePreview ?? 'No messages yet'
-              : 'Unlock chat — MWK 5,000'
-            : chatEnabled
-              ? 'Chat unlocked'
-              : 'You matched'}
-        </Text>
+        <View style={styles.previewRow}>
+          <Text
+            style={[styles.status, { color: colors.mutedForeground }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {mode === 'messages'
+              ? chatEnabled
+                ? messagePreview ?? 'No messages yet'
+                : 'Unlock chat — MWK 5,000'
+              : chatEnabled
+                ? 'Chat unlocked'
+                : 'You matched'}
+          </Text>
+          {mode === 'messages' && chatEnabled && messageTime ? (
+            <Text style={[styles.timestamp, { color: colors.mutedForeground }]}>
+              {messageTime}
+            </Text>
+          ) : null}
+        </View>
       </View>
       {mode === 'matches' ? (
         <UnlockChatButton
@@ -101,5 +111,25 @@ const styles = StyleSheet.create({
   avatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1, minWidth: 0 },
   name: { fontFamily: 'Inter_700Bold', fontSize: 15 },
-  status: { fontSize: 12, lineHeight: 17, marginTop: 4 },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  status: { flex: 1, minWidth: 0, fontSize: 12, lineHeight: 17 },
+  timestamp: { fontSize: 10, lineHeight: 15 },
 });
+
+function formatLastMessageTime(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  if (sameDay) {
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  const elapsedDays = Math.floor((now.getTime() - date.getTime()) / 86_400_000);
+  if (elapsedDays < 7) {
+    return date.toLocaleDateString([], { weekday: 'short' });
+  }
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}

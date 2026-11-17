@@ -862,6 +862,163 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorEnvelope"
+    delete:
+      operationId: clearConnectionMessages
+      tags: [matching]
+      summary: Clear messages for the current user or both participants
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageDeletionScopeInput"
+      responses:
+        "200":
+          description: Messages cleared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageActionResponse"
+        "400":
+          description: Invalid connection ID or deletion scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Caller is not a participant, chat is locked, or users are blocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/messages/{messageId}:
+    patch:
+      operationId: editConnectionMessage
+      tags: [matching]
+      summary: Edit a message sent by the caller within two hours
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditConnectionMessageInput"
+      responses:
+        "200":
+          description: Updated message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionMessage"
+        "400":
+          description: Invalid message ID or body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Caller is not the sender, chat is unavailable, or message is too old
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "404":
+          description: Message not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "409":
+          description: Message is outside the two-hour edit window
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+    delete:
+      operationId: deleteConnectionMessage
+      tags: [matching]
+      summary: Hide a message for the caller or delete it for both participants
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageDeletionScopeInput"
+      responses:
+        "200":
+          description: Message deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageActionResponse"
+        "400":
+          description: Invalid message ID or deletion scope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "403":
+          description: Caller is not permitted to delete this message or chat is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "404":
+          description: Message not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "409":
+          description: Message is outside the two-hour delete window
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
   /v1/connections/{id}/messages/page/{cursor}:
     get:
       operationId: getConnectionMessagesAfterCursor
@@ -1620,6 +1777,31 @@ components:
           type: string
           format: uuid
       required: [body, clientMessageId]
+    EditConnectionMessageInput:
+      type: object
+      additionalProperties: false
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required: [body]
+    MessageDeletionScopeInput:
+      type: object
+      additionalProperties: false
+      properties:
+        scope:
+          type: string
+          enum: [me, everyone]
+      required: [scope]
+    MessageActionResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        changed:
+          type: boolean
+          enum: [true]
+      required: [changed]
     ConnectionMessage:
       type: object
       additionalProperties: false

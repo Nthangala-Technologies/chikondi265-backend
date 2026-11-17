@@ -49,6 +49,27 @@ const colors = {
     input: '#e5d8d4',
   },
 
+  dark: {
+    text: '#f6edf1',
+    tint: '#f16b91',
+    background: '#11131d',
+    foreground: '#f6edf1',
+    card: '#1b1e2a',
+    cardForeground: '#f6edf1',
+    primary: '#ef6289',
+    primaryForeground: '#ffffff',
+    secondary: '#242a3b',
+    secondaryForeground: '#a9d2df',
+    muted: '#262a38',
+    mutedForeground: '#aaaebd',
+    accent: '#f2c66e',
+    accentForeground: '#24202a',
+    destructive: '#e76878',
+    destructiveForeground: '#ffffff',
+    border: '#343747',
+    input: '#383b4b',
+  },
+
   // Border radius in points for cards, buttons, inputs, and modals.
   radius: 22,
 };

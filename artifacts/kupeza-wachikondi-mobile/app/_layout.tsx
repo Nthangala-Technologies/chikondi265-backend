@@ -37,6 +37,7 @@ import {
 import { AppProvider } from '@/components/AppProvider';
 import { AuthProvider, getStoredSessionToken, useAuth } from '@/components/AuthProvider';
 import { ErrorModalProvider } from '@/components/ErrorModal';
+import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { API_BASE_URL } from '@/constants/config';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -390,5 +391,31 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
-  return <SafeAreaProvider><StatusBar style="dark" /><ErrorBoundary><QueryClientProvider client={queryClient}><GestureHandlerRootView style={{ flex: 1 }}><KeyboardProvider><AuthProvider><AppProvider><ErrorModalProvider><RootLayoutNav /></ErrorModalProvider></AppProvider></AuthProvider></KeyboardProvider></GestureHandlerRootView></QueryClientProvider></ErrorBoundary></SafeAreaProvider>;
+  return (
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <KeyboardProvider>
+            <ThemeProvider>
+              <ThemeStatusBar />
+              <ErrorBoundary>
+                <AuthProvider>
+                  <AppProvider>
+                    <ErrorModalProvider>
+                      <RootLayoutNav />
+                    </ErrorModalProvider>
+                  </AppProvider>
+                </AuthProvider>
+              </ErrorBoundary>
+            </ThemeProvider>
+          </KeyboardProvider>
+        </GestureHandlerRootView>
+      </QueryClientProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function ThemeStatusBar() {
+  const { scheme } = useTheme();
+  return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
 }
