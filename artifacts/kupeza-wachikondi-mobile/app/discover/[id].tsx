@@ -16,6 +16,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Chip, imageFor } from '@/components/ui';
+import { useAuth } from '@/components/AuthProvider';
 import { useColors } from '@/hooks/useColors';
 import { useErrorModal } from '@/components/ErrorModal';
 import { toMobileProfile } from '@/utils/live-profile';
@@ -33,17 +34,26 @@ const cardShadowStyle = Platform.select({
 
 export default function ProfileDetail() {
   const colors = useColors();
+  const { account } = useAuth();
   const { showError } = useErrorModal();
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { id, origin } = useLocalSearchParams<{ id: string; origin?: string }>();
   const queryClient = useQueryClient();
-  const discoveryQuery = useGetDiscovery();
+  const viewerQueryId = account?.userId ?? 'signed-out';
+  const discoveryQuery = useGetDiscovery(undefined, {
+    query: {
+      enabled: Boolean(account?.userId),
+      queryKey: [...getGetDiscoveryQueryKey(), viewerQueryId],
+    },
+  });
   const swipeMutation = useRecordSwipe();
   const blockMutation = useCreateBlock();
   const progress = useRef(new Animated.Value(0)).current;
   const closing = useRef(false);
-  const apiProfile = discoveryQuery.data?.items.find((item) => item.userId === id);
+  const apiProfile = discoveryQuery.data?.items.find(
+    (item) => item.userId === id && item.userId !== account?.userId,
+  );
   const profile = apiProfile ? toMobileProfile(apiProfile) : undefined;
   const parsedOrigin = origin?.split(',').map(Number);
   const originFrame = parsedOrigin?.length === 4

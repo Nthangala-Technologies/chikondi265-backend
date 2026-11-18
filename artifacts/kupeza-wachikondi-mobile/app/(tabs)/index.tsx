@@ -5,6 +5,7 @@ import {
   getGetConnectionsQueryKey,
   getGetDiscoveryQueryKey,
   getGetIncomingLikesQueryKey,
+  getSearchUsersQueryKey,
   useGetDiscovery,
   useCreateBlock,
   useRecordSwipe,
@@ -30,7 +31,13 @@ export default function DiscoverScreen() {
   const { account } = useAuth();
   const { showError } = useErrorModal();
   const queryClient = useQueryClient();
-  const discoveryQuery = useGetDiscovery();
+  const viewerQueryId = account?.userId ?? 'signed-out';
+  const discoveryQuery = useGetDiscovery(undefined, {
+    query: {
+      enabled: Boolean(account?.userId),
+      queryKey: [...getGetDiscoveryQueryKey(), viewerQueryId],
+    },
+  });
   const swipeMutation = useRecordSwipe();
   const blockMutation = useCreateBlock();
   const [searchText, setSearchText] = useState('');
@@ -39,9 +46,15 @@ export default function DiscoverScreen() {
     useState<SearchUserProfile | null>(null);
   const [toastMessage, setToastMessage] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const searchParams = { q: debouncedSearch.trim() };
   const searchQuery = useSearchUsers(
-    { q: debouncedSearch.trim() },
-    { query: { enabled: debouncedSearch.trim().length >= 3 } },
+    searchParams,
+    {
+      query: {
+        enabled: Boolean(account?.userId) && searchParams.q.length >= 3,
+        queryKey: [...getSearchUsersQueryKey(searchParams), viewerQueryId],
+      },
+    },
   );
   const searching = searchText.trim().length >= 3;
   const [swipedLiveIds, setSwipedLiveIds] = useState<string[]>([]);
@@ -62,6 +75,10 @@ export default function DiscoverScreen() {
     const timeout = setTimeout(() => setDebouncedSearch(searchText), 300);
     return () => clearTimeout(timeout);
   }, [searchText]);
+
+  useEffect(() => {
+    setSelectedSearchProfile(null);
+  }, [account?.userId]);
 
   useEffect(
     () => () => {
@@ -167,8 +184,18 @@ export default function DiscoverScreen() {
   }, [confirmedSwipedLiveIds, deckStorageKey, hydratedDeckKey]);
 
   const liveProfiles = useMemo(
-    () => (discoveryQuery.data?.items ?? []).map(toMobileProfile),
-    [discoveryQuery.data?.items],
+    () =>
+      (discoveryQuery.data?.items ?? [])
+        .filter((profile) => profile.userId !== account?.userId)
+        .map(toMobileProfile),
+    [discoveryQuery.data?.items, account?.userId],
+  );
+  const visibleSearchResults = useMemo(
+    () =>
+      (searchQuery.data?.items ?? []).filter(
+        (profile) => profile.userId !== account?.userId,
+      ),
+    [searchQuery.data?.items, account?.userId],
   );
   const available = useMemo(
     () => liveProfiles.filter((profile) => !swipedLiveIds.includes(profile.id)),
@@ -308,11 +335,11 @@ export default function DiscoverScreen() {
             </View>
           ) : (
             <FlatList
-              data={searchQuery.data?.items ?? []}
+              data={visibleSearchResults}
               keyExtractor={(item) => item.userId}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
-              scrollEnabled={(searchQuery.data?.items.length ?? 0) > 0}
+              scrollEnabled={visibleSearchResults.length > 0}
               ListEmptyComponent={
                 <View style={styles.searchState}>
                   <Text style={[styles.searchStateText, { color: colors.mutedForeground }]}>No profiles found for that search.</Text>
