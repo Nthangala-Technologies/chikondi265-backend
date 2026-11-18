@@ -26,13 +26,13 @@ router.use(requireUser);
 router.post(
   "/me/photo",
   async (req, res) => {
-    let image: unknown;
+    let base64: unknown;
     try {
-      image = req.body?.base64;
+      base64 = req.body?.base64;
       logger.info(
         {
-          hasImage: typeof image === "string",
-          imageLength: typeof image === "string" ? image.length : null,
+          hasBase64: typeof base64 === "string",
+          base64Length: typeof base64 === "string" ? base64.length : null,
           bodyKeys: Object.keys(req.body ?? {}),
         },
         "photo upload: request received",
@@ -69,6 +69,7 @@ router.post(
         stack?: string;
         name?: string;
         code?: string | number;
+        cause?: unknown;
       } =
         caughtError && typeof caughtError === "object"
           ? (caughtError as {
@@ -76,33 +77,60 @@ router.post(
               stack?: string;
               name?: string;
               code?: string | number;
+              cause?: unknown;
             })
           : new Error(String(caughtError));
       const redactImage = (value?: string) => {
         if (typeof value !== "string") return value;
         const exactImageRedacted =
-          typeof image === "string" && image.length > 0
-            ? value.split(image).join("[image data redacted]")
+          typeof base64 === "string" && base64.length > 0
+            ? value.split(base64).join("[image data redacted]")
             : value;
         return exactImageRedacted.replace(
           /[A-Za-z0-9+/]{32,}={0,2}/g,
           "[base64 redacted]",
         );
       };
+      const cause =
+        err.cause && typeof err.cause === "object"
+          ? (err.cause as {
+              message?: string;
+              code?: string | number;
+              detail?: string;
+              constraint?: string;
+              table?: string;
+              column?: string;
+              severity?: string;
+            })
+          : null;
 
       logger.error(
         {
           err: {
             message: redactImage(err?.message),
-            stack: redactImage(err?.stack),
             name: redactImage(err?.name),
             code:
               typeof err?.code === "string"
                 ? redactImage(err.code)
                 : err?.code,
+            stack: redactImage(err?.stack),
+            cause: cause
+              ? {
+                  message: redactImage(cause.message),
+                  code:
+                    typeof cause.code === "string"
+                      ? redactImage(cause.code)
+                      : cause.code,
+                  detail: redactImage(cause.detail),
+                  constraint: redactImage(cause.constraint),
+                  table: redactImage(cause.table),
+                  column: redactImage(cause.column),
+                  severity: redactImage(cause.severity),
+                }
+              : null,
           },
         },
-        "photo upload: FAILED",
+        "photo upload: FAILED (with cause)",
       );
       res.status(500).json({
         error: "upload_failed",
