@@ -2,16 +2,17 @@
 
 ## START HERE — NEXT AGENT
 
-Updated 2026-11-17. Read this status block first; dated sections below are historical and may contain superseded deployment or authentication details.
+Updated 2026-11-18. Read this status block first; dated sections below are historical and may contain superseded deployment or authentication details.
 
 **Current goal:** deploy the latest GitHub `main` in Dokploy, apply the pending chat-privacy migration, then verify the new message actions with two signed-in users. Keep app API traffic on the remote Dokploy backend.
 
 **Project map:** `artifacts/kupeza-wachikondi-mobile/` is the Expo SDK 58 app; `artifacts/api-server/` is the Express API; `lib/db/` contains Drizzle schemas/migrations; `lib/api-spec/` and generated packages contain API contracts and clients.
 
-**Current state (2026-11-17):**
+**Current state (2026-11-18):**
+- **2026-11-18 chat layout:** removed screenshot prevention. Message lists use vertical-only padding, bubbles wrap within 75% width with side margins, and the multiline composer grows to three lines, anchors at the bottom, and adjusts for the keyboard and safe area. Signed-in device behavior still needs confirmation.
 - **2026-11-18 photo permission handling:** the profile-photo upload button requests media-library access before opening the picker. If access is denied, the app now explains how to enable it in Settings and offers an Open Settings action. Android device behavior has not yet been re-tested.
 - Added message edit, per-user hide, everyone delete, and per-user/everyone clear actions to the API and mobile chat UI. Server-side edit/delete-for-everyone checks enforce the two-hour limit; the client shows the specified older-message toast. Block/report actions are in the chat menu. Migration `lib/db/drizzle/0005_material_silver_fox.sql` adds `deleted_for_user_ids` and participant-specific clear timestamps; it is present in the workspace but **has not been applied to production**. Deploy the API and apply this migration before testing these endpoints.
-- Added persistent System/Light/Dark appearance selection, typed `DELETE` confirmation for account deletion, and local session-data cleanup. The launcher icon now uses the supplied CHIKONDI265 logo. The app remains portrait and uses Android ID `com.nodex.chikondi265`. Android chat screenshot capture is blocked; iOS screenshot prevention is not supported.
+- Added persistent System/Light/Dark appearance selection, typed `DELETE` confirmation for account deletion, and local session-data cleanup. The launcher icon now uses the supplied CHIKONDI265 logo. The app remains portrait and uses Android ID `com.nodex.chikondi265`. Chat screenshot prevention has been removed.
 - Styled payment return pages without changing checkout initiation, redirect configuration, or webhook logic. Connection previews include the latest message timestamp and honor per-user chat hiding/clearing. Checkout URL scheme normalization accepts `http://` and `https://` without a provider hostname allowlist.
 - Final local checks passed: `pnpm -w run typecheck`, API build, and Expo dependency alignment. API and Expo workflows restarted; Metro bundled successfully. The unauthenticated preview screenshot shows the sign-in page only, so signed-in chat/settings behavior still needs a two-account test. No production migration, deployment, payment, or data mutation was run.
 - Android package ID is now `com.nodex.chikondi265` at the user's explicit request. This is a new Android app identity; builds/signing and any store listing must use this identifier. No iOS bundle identifier was changed.

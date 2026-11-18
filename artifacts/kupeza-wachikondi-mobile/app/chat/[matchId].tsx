@@ -14,7 +14,6 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import * as ScreenCapture from 'expo-screen-capture';
 import { ActivityIndicator, Alert, Animated, FlatList, Keyboard, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -46,6 +45,7 @@ export default function ChatScreen() {
     USE_LIVE_API && matchId && connectionQuery.data?.chatEnabledAt,
   );
   const [socketFallbackActive, setSocketFallbackActive] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [sending, setSending] = useState(false);
   const [failedMessageId, setFailedMessageId] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -133,10 +133,13 @@ export default function ChatScreen() {
   );
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    void ScreenCapture.preventScreenCaptureAsync('private-chat').catch(() => undefined);
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSubscription = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
     return () => {
-      void ScreenCapture.allowScreenCaptureAsync('private-chat').catch(() => undefined);
+      showSubscription.remove();
+      hideSubscription.remove();
     };
   }, []);
 
@@ -563,7 +566,7 @@ export default function ChatScreen() {
     }
 
     return (
-      <Shell scroll={false}>
+        <Shell scroll={false} contentBottomPadding={0}>
         <Header
           title={title}
           back
@@ -579,7 +582,11 @@ export default function ChatScreen() {
             </Pressable>
           }
         />
-        <KeyboardAvoidingView style={styles.root} behavior="padding">
+        <KeyboardAvoidingView
+          style={styles.root}
+          behavior="padding"
+          keyboardVerticalOffset={0}
+        >
           {messagesQuery.data?.nextCursor ? (
             <Pressable
               accessibilityRole="button"
@@ -593,6 +600,7 @@ export default function ChatScreen() {
             </Pressable>
           ) : null}
           <FlatList
+            style={styles.messageList}
             data={messagesQuery.data?.items ?? []}
             inverted
             keyExtractor={(item) => item.id}
@@ -624,7 +632,7 @@ export default function ChatScreen() {
             style={[
               styles.composer,
               {
-                paddingBottom: Math.max(insets.bottom, 8),
+                paddingBottom: keyboardVisible ? 8 : Math.max(insets.bottom, 8),
                 backgroundColor: colors.card,
                 borderColor: colors.border,
               },
@@ -794,9 +802,14 @@ export default function ChatScreen() {
   if (!profile || !match) return <View />;
   const send = () => { sendMessage(match.id, text); setText(''); Keyboard.dismiss(); };
   return (
-    <KeyboardAvoidingView style={[styles.root, { backgroundColor: colors.background }]} behavior="padding">
+    <KeyboardAvoidingView
+      style={[styles.root, { backgroundColor: colors.background }]}
+      behavior="padding"
+      keyboardVerticalOffset={0}
+    >
       <Header title={profile.name} back />
       <FlatList
+        style={styles.messageList}
         data={[...messages].reverse()}
         inverted
         keyExtractor={(item) => item.id}
@@ -816,7 +829,7 @@ export default function ChatScreen() {
         }}
         ListHeaderComponent={<View style={{ height: 32 }} />}
       />
-      <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 8), backgroundColor: colors.surface, borderColor: colors.divider }]}>
+      <View style={[styles.composer, { paddingBottom: keyboardVisible ? 8 : Math.max(insets.bottom, 8), backgroundColor: colors.surface, borderColor: colors.divider }]}>
         <TextInput
           ref={input}
           value={text}
@@ -957,6 +970,7 @@ function createClientMessageId(): string {
 }
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  messageList: { flex: 1 },
   list: { paddingHorizontal: 16, paddingBottom: 12 },
   bubble: { maxWidth: '75%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, marginBottom: 12 },
   incoming: { alignSelf: 'flex-start', borderBottomLeftRadius: 4 },

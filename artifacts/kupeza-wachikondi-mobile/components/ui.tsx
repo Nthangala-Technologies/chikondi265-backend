@@ -7,10 +7,20 @@ import { profileImages, Profile } from '@/components/AppProvider';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { useColors } from '@/hooks/useColors';
 
-export function Shell({ children, scroll = true, keyboardAware = false }: { children: ReactNode; scroll?: boolean; keyboardAware?: boolean }) {
+export function Shell({
+  children,
+  scroll = true,
+  keyboardAware = false,
+  contentBottomPadding,
+}: {
+  children: ReactNode;
+  scroll?: boolean;
+  keyboardAware?: boolean;
+  contentBottomPadding?: number;
+}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const content = <View style={[styles.content, !scroll && styles.fillContent, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 100 }]}>{children}</View>;
+  const content = <View style={[styles.content, !scroll && styles.fillContent, { paddingTop: insets.top + 12, paddingBottom: contentBottomPadding ?? insets.bottom + 100 }]}>{children}</View>;
   const scrollContent = keyboardAware ? (
     <KeyboardAwareScrollViewCompat
       bottomOffset={40}

@@ -1,12 +1,13 @@
 # KUPEZA WACHIKONDI — Agent Handoff
 
-Updated 2026-11-17. Read **Current status** first. Older dated notes below are historical and may describe superseded state.
+Updated 2026-11-18. Read **Current status** first. Older dated notes below are historical and may describe superseded state.
 
-## Current status (2026-11-17)
+## Current status (2026-11-18)
 
+- **2026-11-18 chat layout:** removed screenshot prevention. Message lists use vertical-only padding, bubbles wrap within 75% width with side margins, and the multiline composer grows to three lines, anchors at the bottom, and adjusts for the keyboard and safe area. Signed-in device behavior still needs confirmation.
 - **2026-11-18 photo permission handling:** the photo picker requests media-library access before opening. A denied request now displays a Settings explanation and an Open Settings action. Retest the permission prompt on Android; the browser preview cannot verify native permission dialogs.
 - Implemented the approved chat privacy work across API and mobile: edit own messages, hide a message for one participant, hard-delete own messages for everyone, clear history for one or both participants, and block/report actions. Edit/delete-for-everyone are enforced server-side within two hours; older-message attempts show “Messages older than 2 hours cannot be deleted.” New database migration `0005_material_silver_fox.sql` adds per-user message hiding and per-participant chat-clear timestamps. It is generated and committed with the code, but has **not** been applied to the live database or deployed.
-- Added persistent System/Light/Dark appearance selection and typed `DELETE` confirmation before account deletion; account deletion clears local AsyncStorage and logs out. The app icon now uses the supplied CHIKONDI265 logo. Portrait orientation and Android package ID `com.nodex.chikondi265` are preserved. Android chat screenshot capture is blocked; iOS screenshot prevention is not supported by this implementation.
+- Added persistent System/Light/Dark appearance selection and typed `DELETE` confirmation before account deletion; account deletion clears local AsyncStorage and logs out. The app icon now uses the supplied CHIKONDI265 logo. Portrait orientation and Android package ID `com.nodex.chikondi265` are preserved. Chat screenshot prevention has been removed.
 - Styled the payment return pages without changing payment-intent or webhook behavior. Connection list previews include the latest message time and respect per-user hidden/cleared messages. Checkout URLs gain `https://` when missing a scheme and accept explicit `http://` or `https://`; no hostname allowlist is used.
 - Verification: `pnpm -w run typecheck`, API build, and `expo install --check` passed. The API and Expo workflows restarted; Expo bundled and the visitor screenshot displayed the sign-in screen. The screenshot browser is unauthenticated, so signed-in chat/settings behavior was not visually verified. No production migration, payment, or data mutation was run.
 - Changed the Android package ID to `com.nodex.chikondi265` at the user's explicit request. This creates a different Android application identity from the old package; build/signing and store configuration must use the new ID. No iOS bundle identifier was changed.
