@@ -26,6 +26,9 @@ import { API_BASE_URL, USE_LIVE_API } from '@/constants/config';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const MIN_COMPOSER_INPUT_HEIGHT = 44;
+const MAX_COMPOSER_INPUT_HEIGHT = 84;
+
 export default function ChatScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -46,6 +49,9 @@ export default function ChatScreen() {
   );
   const [socketFallbackActive, setSocketFallbackActive] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [composerInputHeight, setComposerInputHeight] = useState(
+    MIN_COMPOSER_INPUT_HEIGHT,
+  );
   const [sending, setSending] = useState(false);
   const [failedMessageId, setFailedMessageId] = useState<string | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -458,6 +464,7 @@ export default function ChatScreen() {
     };
     appendMessage(optimisticMessage);
     setText('');
+    setComposerInputHeight(MIN_COMPOSER_INPUT_HEIGHT);
     Keyboard.dismiss();
     setSending(true);
     try {
@@ -641,9 +648,24 @@ export default function ChatScreen() {
             <TextInput
               value={text}
               onChangeText={setText}
+              multiline
+              scrollEnabled={composerInputHeight >= MAX_COMPOSER_INPUT_HEIGHT}
+              onContentSizeChange={(event) => {
+                const nextHeight = Math.min(
+                  MAX_COMPOSER_INPUT_HEIGHT,
+                  Math.max(
+                    MIN_COMPOSER_INPUT_HEIGHT,
+                    event.nativeEvent.contentSize.height + 16,
+                  ),
+                );
+                setComposerInputHeight(nextHeight);
+              }}
               placeholder="Write a thoughtful message…"
               placeholderTextColor={colors.mutedForeground}
-              style={[styles.field, { color: colors.foreground }]}
+              style={[
+                styles.field,
+                { color: colors.foreground, height: composerInputHeight },
+              ]}
               onSubmitEditing={() => void sendLiveMessage()}
               returnKeyType="send"
               maxLength={2000}
@@ -800,7 +822,12 @@ export default function ChatScreen() {
   }
 
   if (!profile || !match) return <View />;
-  const send = () => { sendMessage(match.id, text); setText(''); Keyboard.dismiss(); };
+  const send = () => {
+    sendMessage(match.id, text);
+    setText('');
+    setComposerInputHeight(MIN_COMPOSER_INPUT_HEIGHT);
+    Keyboard.dismiss();
+  };
   return (
     <KeyboardAvoidingView
       style={[styles.root, { backgroundColor: colors.background }]}
@@ -821,7 +848,7 @@ export default function ChatScreen() {
           return (
             <View style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
               <View style={[styles.bubble, mine ? [styles.outgoing, { backgroundColor: colors.primary }] : [styles.incoming, { backgroundColor: colors.surfaceVariant }]]}>
-                <Text style={{ color: mine ? colors.primaryForeground : colors.onSurface, lineHeight: 20 }}>{item.text}</Text>
+                <Text style={{ color: mine ? colors.primaryForeground : colors.onSurface, lineHeight: 20, flexWrap: 'wrap' }}>{item.text}</Text>
                 <Text style={{ color: mine ? colors.primaryForeground : colors.onSurfaceVariant, opacity: mine ? 0.68 : 1, fontSize: 12, marginTop: 4, textAlign: 'right' }}>{item.time}</Text>
               </View>
             </View>
@@ -834,9 +861,24 @@ export default function ChatScreen() {
           ref={input}
           value={text}
           onChangeText={setText}
+          multiline
+          scrollEnabled={composerInputHeight >= MAX_COMPOSER_INPUT_HEIGHT}
+          onContentSizeChange={(event) => {
+            const nextHeight = Math.min(
+              MAX_COMPOSER_INPUT_HEIGHT,
+              Math.max(
+                MIN_COMPOSER_INPUT_HEIGHT,
+                event.nativeEvent.contentSize.height + 16,
+              ),
+            );
+            setComposerInputHeight(nextHeight);
+          }}
           placeholder="Write a thoughtful message…"
           placeholderTextColor={colors.onSurfaceVariant}
-          style={[styles.field, { color: colors.onSurface }]}
+          style={[
+            styles.field,
+            { color: colors.onSurface, height: composerInputHeight },
+          ]}
           onSubmitEditing={send}
           returnKeyType="send"
         />
@@ -939,7 +981,7 @@ function AnimatedMessageBubble({
           onLongPress={onLongPress}
           delayLongPress={350}
         >
-          <Text style={{ color: mine ? colors.primaryForeground : colors.onSurface, lineHeight: 20 }}>
+          <Text style={{ color: mine ? colors.primaryForeground : colors.onSurface, lineHeight: 20, flexWrap: 'wrap' }}>
             {message.body}
           </Text>
           <Text
@@ -971,12 +1013,12 @@ function createClientMessageId(): string {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   messageList: { flex: 1 },
-  list: { paddingHorizontal: 16, paddingBottom: 12 },
-  bubble: { maxWidth: '75%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, marginBottom: 12 },
+  list: { paddingTop: 8, paddingBottom: 8 },
+  bubble: { maxWidth: '75%', flexShrink: 1, marginHorizontal: 16, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, marginBottom: 12 },
   incoming: { alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
   outgoing: { alignSelf: 'flex-end', borderBottomRightRadius: 4 },
-  composer: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1 },
-  field: { flex: 1, minHeight: 44, fontSize: 14, paddingHorizontal: 8 },
+  composer: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8, borderTopWidth: 1 },
+  field: { flex: 1, minHeight: MIN_COMPOSER_INPUT_HEIGHT, maxHeight: MAX_COMPOSER_INPUT_HEIGHT, fontSize: 14, lineHeight: 20, paddingHorizontal: 8, paddingVertical: 8, textAlignVertical: 'center' },
   send: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   headerAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   toast: {
