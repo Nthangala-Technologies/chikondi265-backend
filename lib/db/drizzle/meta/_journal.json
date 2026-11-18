@@ -43,6 +43,13 @@
       "when": 1794913451030,
       "tag": "0005_material_silver_fox",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795001891260,
+      "tag": "0006_fix_photo_column",
+      "breakpoints": true
     }
   ]
 }

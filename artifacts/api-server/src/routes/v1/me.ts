@@ -17,6 +17,7 @@ import {
   uploadCurrentUserProfilePhoto,
 } from "../../modules/profiles/service";
 import { getCurrentUserPaymentHistory } from "../../modules/payments/service";
+import { logger } from "../../lib/logger";
 
 const router = Router();
 
@@ -35,10 +36,12 @@ router.post(
           collectFieldErrors(parsed.error.issues),
         );
       }
-      const data = Buffer.from(parsed.data.base64, "base64");
+      const image = parsed.data.base64;
+      logger.info({ length: image?.length }, "Photo upload received");
+      const data = Buffer.from(image, "base64");
       if (
         data.byteLength === 0 ||
-        data.toString("base64") !== parsed.data.base64
+        data.toString("base64") !== image
       ) {
         throw new ApiError(400, "BAD_REQUEST", "The image data is invalid.", {
           base64: ["Send a valid Base64-encoded image."],
