@@ -12,7 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Image, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, Image, Linking, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import {
   defaultAvatarForUser,
   generatedAvatarIds,
@@ -153,7 +153,24 @@ export default function ProfilePhotosScreen() {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setPhotoError('Allow photo library access to choose a picture.');
+      Alert.alert(
+        'Photo access needed',
+        'Enable photo library access in Settings to choose a profile picture.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open Settings',
+            onPress: () => {
+              void Linking.openSettings().catch(() => {
+                Alert.alert(
+                  'Unable to open Settings',
+                  'Please enable photo library access in your Android Settings.',
+                );
+              });
+            },
+          },
+        ],
+      );
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
