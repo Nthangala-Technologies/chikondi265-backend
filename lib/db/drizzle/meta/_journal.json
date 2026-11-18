@@ -50,6 +50,13 @@
       "when": 1795001891260,
       "tag": "0006_fix_photo_column",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795012590267,
+      "tag": "0007_drop_object_key_unique",
+      "breakpoints": true
     }
   ]
 }
