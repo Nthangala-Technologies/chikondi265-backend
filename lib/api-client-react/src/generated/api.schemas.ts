@@ -137,6 +137,24 @@ export interface AuthSessionResponse {
   profile: Profile | null;
 }
 
+export type UploadProfilePhotoBodyMimeType = typeof UploadProfilePhotoBodyMimeType[keyof typeof UploadProfilePhotoBodyMimeType];
+
+
+export const UploadProfilePhotoBodyMimeType = {
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface UploadProfilePhotoBody {
+  mimeType: UploadProfilePhotoBodyMimeType;
+  /**
+     * @minLength 4
+     * @maxLength 6990508
+     */
+  base64: string;
+}
+
 export type UploadProfilePhotoResponseModerationStatus = typeof UploadProfilePhotoResponseModerationStatus[keyof typeof UploadProfilePhotoResponseModerationStatus];
 
 

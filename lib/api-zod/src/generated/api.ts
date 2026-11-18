@@ -243,6 +243,16 @@ export const SaveCurrentUserProfileResponse = zod.object({
 /**
  * @summary Upload the authenticated user's profile photo
  */
+export const uploadCurrentUserPhotoBodyBase64Min = 4;
+export const uploadCurrentUserPhotoBodyBase64Max = 6990508;
+
+
+
+export const UploadCurrentUserPhotoBody = zod.object({
+  "mimeType": zod.enum(['image/jpeg', 'image/png', 'image/webp']),
+  "base64": zod.string().min(uploadCurrentUserPhotoBodyBase64Min).max(uploadCurrentUserPhotoBodyBase64Max)
+})
+
 export const UploadCurrentUserPhotoResponse = zod.object({
   "photoUrl": zod.string(),
   "moderationStatus": zod.enum(['approved'])

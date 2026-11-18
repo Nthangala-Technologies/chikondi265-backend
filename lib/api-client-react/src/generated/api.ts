@@ -63,6 +63,7 @@ import type {
   SoftDeleteAccountResult,
   SwipeInput,
   SwipeResult,
+  UploadProfilePhotoBody,
   UploadProfilePhotoResponse,
   UserSearchResults
 } from './api.schemas';
@@ -821,7 +822,7 @@ export const getUploadCurrentUserPhotoUrl = () => {
 /**
  * @summary Upload the authenticated user's profile photo
  */
-export const uploadCurrentUserPhoto = async (uploadCurrentUserPhotoBody: Blob, options?: Parameters<typeof customFetch>[1]): Promise<UploadProfilePhotoResponse> => {
+export const uploadCurrentUserPhoto = async (uploadProfilePhotoBody: UploadProfilePhotoBody, options?: Parameters<typeof customFetch>[1]): Promise<UploadProfilePhotoResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -841,8 +842,8 @@ return customFetch<UploadProfilePhotoResponse>(getUploadCurrentUserPhotoUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'image/jpeg', ...getHeaders(options?.headers) },
-    body: uploadCurrentUserPhotoBody
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(uploadProfilePhotoBody)
   }
 );}
 
@@ -880,9 +881,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UploadCurrentUserPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof uploadCurrentUserPhoto>>>
-    export type UploadCurrentUserPhotoMutationBody = BodyType<Blob>
+    export type UploadCurrentUserPhotoMutationBody = BodyType<UploadProfilePhotoBody>
     export type UploadCurrentUserPhotoMutationError = ErrorType<ApiErrorEnvelope>
-    export type UploadCurrentUserPhotoMutationVariables = {data: BodyType<Blob>}
+    export type UploadCurrentUserPhotoMutationVariables = {data: BodyType<UploadProfilePhotoBody>}
 
     /**
  * @summary Upload the authenticated user's profile photo

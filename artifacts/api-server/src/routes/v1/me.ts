@@ -1,7 +1,8 @@
-import express, { Router } from "express";
+import { Router } from "express";
 import {
   ChangeCurrentPasswordBody,
   SaveCurrentUserProfileBody,
+  UploadCurrentUserPhotoBody,
 } from "@workspace/api-zod";
 import { ApiError } from "../../middleware/error-handler";
 import { requireUser } from "../../middleware/require-user";
@@ -23,38 +24,31 @@ router.use(requireUser);
 
 router.post(
   "/me/photo",
-  express.raw({
-    type: ["image/jpeg", "image/png", "image/webp"],
-    limit: "5mb",
-  }),
   async (req, res, next) => {
     try {
-      const mimeType = req.headers["content-type"]
-        ?.split(";")[0]
-        ?.trim()
-        .toLowerCase();
-      if (
-        mimeType !== "image/jpeg" &&
-        mimeType !== "image/png" &&
-        mimeType !== "image/webp"
-      ) {
+      const parsed = UploadCurrentUserPhotoBody.safeParse(req.body);
+      if (!parsed.success) {
         throw new ApiError(
-          415,
+          400,
           "BAD_REQUEST",
-          "Choose a JPEG, PNG, or WebP image.",
-          { photo: ["Only JPEG, PNG, and WebP images are supported."] },
+          "Photo upload details are invalid.",
+          collectFieldErrors(parsed.error.issues),
         );
       }
-      if (!Buffer.isBuffer(req.body)) {
-        throw new ApiError(400, "BAD_REQUEST", "No image was uploaded.", {
-          photo: ["Choose an image to upload."],
+      const data = Buffer.from(parsed.data.base64, "base64");
+      if (
+        data.byteLength === 0 ||
+        data.toString("base64") !== parsed.data.base64
+      ) {
+        throw new ApiError(400, "BAD_REQUEST", "The image data is invalid.", {
+          base64: ["Send a valid Base64-encoded image."],
         });
       }
 
       const uploaded = await uploadCurrentUserProfilePhoto(
         res.locals.userId as string,
-        req.body,
-        mimeType,
+        data,
+        parsed.data.mimeType,
       );
       res.status(200).json(uploaded);
     } catch (error) {

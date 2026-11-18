@@ -225,18 +225,9 @@ paths:
       requestBody:
         required: true
         content:
-          image/jpeg:
+          application/json:
             schema:
-              type: string
-              format: binary
-          image/png:
-            schema:
-              type: string
-              format: binary
-          image/webp:
-            schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/UploadProfilePhotoBody"
       responses:
         "200":
           description: Photo saved for the authenticated user
@@ -257,13 +248,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiErrorEnvelope"
         "413":
-          description: Image exceeds the 5 MB limit
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiErrorEnvelope"
-        "415":
-          description: Unsupported image format
+          description: Encoded request exceeds 10 MB or decoded image exceeds 5 MB
           content:
             application/json:
               schema:
@@ -1248,6 +1233,19 @@ components:
             - $ref: "#/components/schemas/Profile"
             - type: "null"
       required: [token, expiresAt, userId, email, profile]
+    UploadProfilePhotoBody:
+      type: object
+      additionalProperties: false
+      properties:
+        mimeType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        base64:
+          type: string
+          format: byte
+          minLength: 4
+          maxLength: 6990508
+      required: [mimeType, base64]
     UploadProfilePhotoResponse:
       type: object
       additionalProperties: false

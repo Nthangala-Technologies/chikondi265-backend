@@ -76,6 +76,8 @@ export * from './swipeInput';
 export * from './swipeInputAction';
 export * from './swipeResult';
 export * from './swipeResultAction';
+export * from './uploadProfilePhotoBody';
+export * from './uploadProfilePhotoBodyMimeType';
 export * from './uploadProfilePhotoResponse';
 export * from './uploadProfilePhotoResponseModerationStatus';
 export * from './userSearchResults';

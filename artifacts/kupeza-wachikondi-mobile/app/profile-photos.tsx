@@ -4,10 +4,10 @@ import {
   getGetIncomingLikesQueryKey,
   getGetNotificationsQueryKey,
   saveCurrentUserProfile,
+  uploadCurrentUserPhoto,
 } from '@workspace/api-client-react';
 import { Feather } from '@expo/vector-icons';
 import { File as ExpoFile } from 'expo-file-system';
-import { fetch as expoFetch } from 'expo/fetch';
 import * as ImagePicker from 'expo-image-picker';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -19,11 +19,42 @@ import {
   profileImages,
   type GeneratedAvatarId,
 } from '@/components/AppProvider';
-import { getStoredSessionToken, useAuth } from '@/components/AuthProvider';
-import { API_BASE_URL } from '@/constants/config';
+import { useAuth } from '@/components/AuthProvider';
 import { Header, imageFor, Shell } from '@/components/ui';
 import { useColors } from '@/hooks/useColors';
 import { useErrorModal } from '@/components/ErrorModal';
+
+const photoMimeTypes = ['image/jpeg', 'image/png', 'image/webp'] as const;
+type PhotoMimeType = (typeof photoMimeTypes)[number];
+
+function isPhotoMimeType(value: string): value is PhotoMimeType {
+  return photoMimeTypes.includes(value as PhotoMimeType);
+}
+
+async function fileToBase64(file: Blob): Promise<string> {
+  const localFile = file as Blob & { base64?: () => Promise<string> };
+  if (typeof localFile.base64 === 'function') {
+    return localFile.base64();
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('The selected photo could not be read.'));
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        reject(new Error('The selected photo could not be read.'));
+        return;
+      }
+      const separator = reader.result.indexOf(',');
+      if (separator < 0) {
+        reject(new Error('The selected photo could not be encoded.'));
+        return;
+      }
+      resolve(reader.result.slice(separator + 1));
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function ProfilePhotosScreen() {
   const colors = useColors();
@@ -83,7 +114,7 @@ export default function ProfilePhotosScreen() {
 
   const uploadPhoto = async (file: Blob, mimeType: string) => {
     setPhotoError(null);
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+    if (!isPhotoMimeType(mimeType)) {
       setPhotoError('Choose a JPEG, PNG, or WebP image.');
       return;
     }
@@ -94,27 +125,8 @@ export default function ProfilePhotosScreen() {
 
     setUploadingPhoto(true);
     try {
-      if (!API_BASE_URL) throw new Error('The API address is not configured.');
-      const token = await getStoredSessionToken();
-      if (!token) throw new Error('Sign in again before uploading a photo.');
-
-      const response = await expoFetch(
-        `${API_BASE_URL}/api/v1/me/photo`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': mimeType,
-          },
-          body: file,
-        },
-      );
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          result?.error?.message ?? 'The photo could not be uploaded.',
-        );
-      }
+      const base64 = await fileToBase64(file);
+      await uploadCurrentUserPhoto({ mimeType, base64 });
 
       await refreshAccount();
       await Promise.all([
@@ -196,7 +208,7 @@ export default function ProfilePhotosScreen() {
       setPhotoError('The image must be 5 MB or smaller.');
       return;
     }
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+    if (!isPhotoMimeType(mimeType)) {
       setPhotoError('Choose a JPEG, PNG, or WebP image.');
       return;
     }
