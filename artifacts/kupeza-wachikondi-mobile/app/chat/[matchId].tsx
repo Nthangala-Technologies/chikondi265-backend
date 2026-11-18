@@ -75,6 +75,17 @@ export default function ChatScreen() {
   const conversationId = matchId ?? '';
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  const updateComposerInputHeight = (contentHeight: number) => {
+    const measuredTextHeight = Math.max(0, contentHeight - 16);
+    const lineCount = Math.max(1, Math.ceil(measuredTextHeight / 20));
+    setComposerInputHeight(
+      Math.min(
+        MAX_COMPOSER_INPUT_HEIGHT,
+        MIN_COMPOSER_INPUT_HEIGHT + (lineCount - 1) * 20,
+      ),
+    );
+  };
+
   const showToast = useCallback((message: string) => {
     setToastMessage(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -650,16 +661,9 @@ export default function ChatScreen() {
               onChangeText={setText}
               multiline
               scrollEnabled={composerInputHeight >= MAX_COMPOSER_INPUT_HEIGHT}
-              onContentSizeChange={(event) => {
-                const nextHeight = Math.min(
-                  MAX_COMPOSER_INPUT_HEIGHT,
-                  Math.max(
-                    MIN_COMPOSER_INPUT_HEIGHT,
-                    event.nativeEvent.contentSize.height + 16,
-                  ),
-                );
-                setComposerInputHeight(nextHeight);
-              }}
+              onContentSizeChange={(event) =>
+                updateComposerInputHeight(event.nativeEvent.contentSize.height)
+              }
               placeholder="Write a thoughtful message…"
               placeholderTextColor={colors.mutedForeground}
               style={[
@@ -863,16 +867,9 @@ export default function ChatScreen() {
           onChangeText={setText}
           multiline
           scrollEnabled={composerInputHeight >= MAX_COMPOSER_INPUT_HEIGHT}
-          onContentSizeChange={(event) => {
-            const nextHeight = Math.min(
-              MAX_COMPOSER_INPUT_HEIGHT,
-              Math.max(
-                MIN_COMPOSER_INPUT_HEIGHT,
-                event.nativeEvent.contentSize.height + 16,
-              ),
-            );
-            setComposerInputHeight(nextHeight);
-          }}
+          onContentSizeChange={(event) =>
+            updateComposerInputHeight(event.nativeEvent.contentSize.height)
+          }
           placeholder="Write a thoughtful message…"
           placeholderTextColor={colors.onSurfaceVariant}
           style={[
