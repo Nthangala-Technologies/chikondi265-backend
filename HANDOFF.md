@@ -1,9 +1,10 @@
 # KUPEZA WACHIKONDI — Agent Handoff
 
-Updated 2026-11-18. Read **Current status** first. Older dated notes below are historical and may describe superseded state.
+Updated 2026-11-19. Read **Current status** first. Older dated notes below are historical and may describe superseded state.
 
-## Current status (2026-11-18)
+## Current status (2026-11-19)
 
+- **2026-11-19 mobile API URL:** one public variable, `EXPO_PUBLIC_API_BASE_URL`, configures API requests and uploaded-photo URLs. `.replit` sets it to `https://chikondi265.zapto.org`; release builds pass that value through and stop with an explicit error if it is missing. No API-server route or behavior changed.
 - **2026-11-18 durable profile-photo uploads:** mobile sends JSON with a Base64 image field (not multipart); Express accepts requests up to 10 MB while decoded images remain capped at 5 MB. Image data is validated and saved as uniquely tagged Base64 in `profile_photos.object_key`; API profile responses return data URLs, and mobile `imageFor` renders them. New uploads are approved immediately for cross-device visibility and the upload flow refreshes `/api/v1/me`. No database migration is needed. This temporary PostgreSQL fallback can make rows and API payloads large; use Cloudinary/S3 before scaling.
 - **2026-11-18 chat layout:** removed screenshot prevention. Message lists use vertical-only padding, bubbles wrap within 75% width with side margins, and the multiline composer grows to three lines, anchors at the bottom, and adjusts for the keyboard and safe area. Signed-in device behavior still needs confirmation.
 - **2026-11-18 photo permission handling:** the photo picker requests media-library access before opening. A denied request now displays a Settings explanation and an Open Settings action. Retest the permission prompt on Android; the browser preview cannot verify native permission dialogs.

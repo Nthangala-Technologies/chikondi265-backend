@@ -2,13 +2,14 @@
 
 ## START HERE — NEXT AGENT
 
-Updated 2026-11-18. Read this status block first; dated sections below are historical and may contain superseded deployment or authentication details.
+Updated 2026-11-19. Read this status block first; dated sections below are historical and may contain superseded deployment or authentication details.
 
 **Current goal:** deploy the latest GitHub `main` in Dokploy, apply the pending chat-privacy migration, then verify the new message actions with two signed-in users. Keep app API traffic on the remote Dokploy backend.
 
 **Project map:** `artifacts/kupeza-wachikondi-mobile/` is the Expo SDK 58 app; `artifacts/api-server/` is the Express API; `lib/db/` contains Drizzle schemas/migrations; `lib/api-spec/` and generated packages contain API contracts and clients.
 
-**Current state (2026-11-18):**
+**Current state (2026-11-19):**
+- **2026-11-19 mobile API URL:** the mobile app uses only `EXPO_PUBLIC_API_BASE_URL`, configured as `https://chikondi265.zapto.org` in `.replit`. The release bundle builder passes this variable through and fails clearly if it is missing; API requests and upload URLs share the same constant. No API-server route or behavior changed.
 - **2026-11-18 durable profile-photo uploads:** the mobile app sends JSON with a Base64 image field (not multipart); Express accepts JSON up to 10 MB while decoded images remain capped at 5 MB. Images are validated and saved as uniquely tagged Base64 data in `profile_photos.object_key`, then returned by the API as data URLs. New uploads are approved immediately so discovery, matches, connections, and other devices can display them; the mobile app refreshes `/api/v1/me` and its shared image helper handles the data URL. No migration is required. This temporary PostgreSQL-storage fallback expands rows and API payloads substantially; move to Cloudinary/S3 before scaling.
 - **2026-11-18 chat layout:** removed screenshot prevention. Message lists use vertical-only padding, bubbles wrap within 75% width with side margins, and the multiline composer grows to three lines, anchors at the bottom, and adjusts for the keyboard and safe area. Signed-in device behavior still needs confirmation.
 - **2026-11-18 photo permission handling:** the profile-photo upload button requests media-library access before opening the picker. If access is denied, the app now explains how to enable it in Settings and offers an Open Settings action. Android device behavior has not yet been re-tested.

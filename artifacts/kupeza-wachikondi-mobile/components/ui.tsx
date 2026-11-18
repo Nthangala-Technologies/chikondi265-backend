@@ -5,6 +5,7 @@ import { Animated, Image, ImageSourcePropType, Platform, Pressable, ScrollView, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { profileImages, Profile } from '@/components/AppProvider';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+import { API_BASE_URL } from '@/constants/config';
 import { useColors } from '@/hooks/useColors';
 
 export function Shell({
@@ -108,9 +109,7 @@ export function imageFor(photo: number | string): ImageSourcePropType {
     return { uri: photo };
   }
   if (typeof photo === 'string' && photo.startsWith('/uploads/')) {
-    const apiBase = process.env.EXPO_PUBLIC_API_URL;
-    if (!apiBase) throw new Error('EXPO_PUBLIC_API_URL must be configured to load profile photos.');
-    return { uri: `${apiBase.replace(/\/+$/, '')}${photo}` };
+    return { uri: `${API_BASE_URL}${photo}` };
   }
   if (typeof photo === 'string' && photo in profileImages) {
     return profileImages[photo as keyof typeof profileImages];

@@ -130,6 +130,13 @@ function getExpoPublicReplId() {
 }
 
 async function startMetro(expoPublicDomain, expoPublicReplId) {
+  const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+  if (!apiBaseUrl) {
+    throw new Error(
+      'EXPO_PUBLIC_API_BASE_URL must be configured before building the mobile bundle.',
+    );
+  }
+
   const isRunning = await checkMetroHealth();
   if (isRunning) {
     console.log('Metro already running');
@@ -141,9 +148,7 @@ async function startMetro(expoPublicDomain, expoPublicReplId) {
   const env = {
     ...process.env,
     EXPO_PUBLIC_DOMAIN: expoPublicDomain,
-    EXPO_PUBLIC_API_URL:
-      process.env.EXPO_PUBLIC_API_BASE_URL ??
-      'https://chikondi265-chikondi265-dfwtab-894778-102-202-46-218.sslip.io',
+    EXPO_PUBLIC_API_BASE_URL: apiBaseUrl,
     EXPO_PUBLIC_REPL_ID: expoPublicReplId,
   };
 
