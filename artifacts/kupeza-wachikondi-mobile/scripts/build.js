@@ -130,12 +130,9 @@ function getExpoPublicReplId() {
 }
 
 async function startMetro(expoPublicDomain, expoPublicReplId) {
-  const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
-  if (!apiBaseUrl) {
-    throw new Error(
-      'EXPO_PUBLIC_API_BASE_URL must be configured before building the mobile bundle.',
-    );
-  }
+  const apiBaseUrl =
+    process.env.EXPO_PUBLIC_API_BASE_URL?.trim() ||
+    'https://chikondi265.zapto.org';
 
   const isRunning = await checkMetroHealth();
   if (isRunning) {
