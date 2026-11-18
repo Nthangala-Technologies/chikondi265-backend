@@ -101,6 +101,12 @@ export function PhotoAvatar({ photo, size = 52 }: { photo: number | string; size
 }
 
 export function imageFor(photo: number | string): ImageSourcePropType {
+  if (
+    typeof photo === 'string' &&
+    /^data:image\/(?:jpeg|png|webp);base64,/.test(photo)
+  ) {
+    return { uri: photo };
+  }
   if (typeof photo === 'string' && photo.startsWith('/uploads/')) {
     const apiBase = process.env.EXPO_PUBLIC_API_URL;
     if (!apiBase) throw new Error('EXPO_PUBLIC_API_URL must be configured to load profile photos.');

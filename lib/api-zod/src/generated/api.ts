@@ -245,7 +245,7 @@ export const SaveCurrentUserProfileResponse = zod.object({
  */
 export const UploadCurrentUserPhotoResponse = zod.object({
   "photoUrl": zod.string(),
-  "moderationStatus": zod.enum(['pending'])
+  "moderationStatus": zod.enum(['approved'])
 })
 
 

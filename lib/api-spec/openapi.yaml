@@ -1257,7 +1257,7 @@ components:
           format: uri-reference
         moderationStatus:
           type: string
-          enum: [pending]
+          enum: [approved]
       required: [photoUrl, moderationStatus]
     HealthStatus:
       type: object

@@ -102,13 +102,13 @@ export async function saveOwnProfilePhotoObjectKey(
       userId,
       objectKey,
       position: 0,
-      moderationStatus: "pending",
+      moderationStatus: "approved",
     })
     .onConflictDoUpdate({
       target: [profilePhotosTable.userId, profilePhotosTable.position],
       set: {
         objectKey,
-        moderationStatus: "pending",
+        moderationStatus: "approved",
         createdAt: new Date(),
       },
     });

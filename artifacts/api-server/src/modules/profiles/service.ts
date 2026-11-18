@@ -13,10 +13,7 @@ import {
 } from "./repository";
 import { isAtLeast18 } from "./age-policy";
 import { publishUserDataUpdates } from "../realtime/service";
-import {
-  removeStoredProfilePhoto,
-  storeProfilePhotoFile,
-} from "./photo-upload";
+import { encodeProfilePhotoForDatabase } from "./photo-upload";
 import { profilePhotoUrlFromObjectKey } from "./avatars";
 
 export { isAtLeast18 } from "./age-policy";
@@ -125,18 +122,13 @@ export async function uploadCurrentUserProfilePhoto(
   data: Buffer,
   mimeType: string,
 ) {
-  const storedPhoto = await storeProfilePhotoFile(userId, data, mimeType);
-  try {
-    await saveOwnProfilePhotoObjectKey(userId, storedPhoto.objectKey);
-  } catch (error) {
-    await removeStoredProfilePhoto(storedPhoto.filePath);
-    throw error;
-  }
+  const objectKey = encodeProfilePhotoForDatabase(data, mimeType);
+  await saveOwnProfilePhotoObjectKey(userId, objectKey);
 
   await publishUserDataUpdates([userId]);
   return {
-    photoUrl: profilePhotoUrlFromObjectKey(storedPhoto.objectKey)!,
-    moderationStatus: "pending" as const,
+    photoUrl: profilePhotoUrlFromObjectKey(objectKey)!,
+    moderationStatus: "approved" as const,
   };
 }
 

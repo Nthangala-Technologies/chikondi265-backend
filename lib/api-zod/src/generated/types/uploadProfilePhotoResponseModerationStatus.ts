@@ -10,5 +10,5 @@ export type UploadProfilePhotoResponseModerationStatus = typeof UploadProfilePho
 
 
 export const UploadProfilePhotoResponseModerationStatus = {
-  pending: 'pending',
+  approved: 'approved',
 } as const;

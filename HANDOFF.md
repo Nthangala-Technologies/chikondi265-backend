@@ -4,6 +4,7 @@ Updated 2026-11-18. Read **Current status** first. Older dated notes below are h
 
 ## Current status (2026-11-18)
 
+- **2026-11-18 durable profile-photo uploads:** image bytes are validated and stored as uniquely tagged Base64 in `profile_photos.object_key`; API profile responses return data URLs, and mobile `imageFor` renders them. New uploads are approved immediately for cross-device visibility and the upload flow refreshes `/api/v1/me`. No database migration is needed. This temporary PostgreSQL fallback can make rows and API payloads large at the existing 5 MB upload limit; use Cloudinary/S3 before scaling.
 - **2026-11-18 chat layout:** removed screenshot prevention. Message lists use vertical-only padding, bubbles wrap within 75% width with side margins, and the multiline composer grows to three lines, anchors at the bottom, and adjusts for the keyboard and safe area. Signed-in device behavior still needs confirmation.
 - **2026-11-18 photo permission handling:** the photo picker requests media-library access before opening. A denied request now displays a Settings explanation and an Open Settings action. Retest the permission prompt on Android; the browser preview cannot verify native permission dialogs.
 - Implemented the approved chat privacy work across API and mobile: edit own messages, hide a message for one participant, hard-delete own messages for everyone, clear history for one or both participants, and block/report actions. Edit/delete-for-everyone are enforced server-side within two hours; older-message attempts show “Messages older than 2 hours cannot be deleted.” New database migration `0005_material_silver_fox.sql` adds per-user message hiding and per-participant chat-clear timestamps. It is generated and committed with the code, but has **not** been applied to the live database or deployed.
@@ -34,7 +35,7 @@ Updated 2026-11-18. Read **Current status** first. Older dated notes below are h
 - Ably token authorization previously returned HTTP 400 in the user's 2026-11-16 preview logs. The backend was migrated from `ably` v2 to `@ably/pubsub-server` and `@ably/pubsub-device` v3.1.0. The earlier Ably-specific push was API-only; later release `1ee33dd...` added the mobile artifact to the same GitHub `main` branch.
 - The live database was seeded with demo accounts and related test data on 2026-11-16. Do not reset, truncate, or reseed it without explicit approval.
 - Browser Ably auth now uses a bounded `fetch` callback with `credentials: 'omit'` instead of `authUrl`. The live preflight allows the preview origin but does not allow credentialed browser requests; Ably automatically enables XHR credentials for Authorization headers. Realtime delivery still needs signed-in verification.
-- Profile uploads still use temporary local disk storage and are not durable across redeploys.
+- Historical before 2026-11-18: profile uploads used temporary local disk storage and were not durable across redeploys. New uploads use the Base64-in-PostgreSQL fallback documented in Current status.
 
 Older registration, migration, and deployment notes below are retained as dated history. Do not treat stale seed or deployment statements as current.
 

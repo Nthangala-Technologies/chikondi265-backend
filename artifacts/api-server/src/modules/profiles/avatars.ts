@@ -28,6 +28,17 @@ export function avatarIdFromObjectKey(
 export function profilePhotoUrlFromObjectKey(
   objectKey: string | null | undefined,
 ): string | null {
+  if (!objectKey) return null;
+  if (objectKey.startsWith("db-photo:")) {
+    const dataMarker = objectKey.indexOf(":data:");
+    const dataUrl = dataMarker >= 0 ? objectKey.slice(dataMarker + 1) : "";
+    return /^data:image\/(?:jpeg|png|webp);base64,/.test(dataUrl)
+      ? dataUrl
+      : null;
+  }
+  if (/^data:image\/(?:jpeg|png|webp);base64,/.test(objectKey)) {
+    return objectKey;
+  }
   if (!objectKey?.startsWith("profile-photos/")) return null;
   return `/uploads/${objectKey}`;
 }

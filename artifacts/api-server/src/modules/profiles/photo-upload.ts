@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { ApiError } from "../../middleware/error-handler";
 
@@ -67,25 +66,10 @@ function assertImageData(
   }
 }
 
-export async function storeProfilePhotoFile(
-  userId: string,
+export function encodeProfilePhotoForDatabase(
   data: Buffer,
   mimeType: string,
-): Promise<{ objectKey: string; filePath: string }> {
+): string {
   assertImageData(data, mimeType);
-  if (!/^[a-zA-Z0-9_-]+$/.test(userId)) {
-    throw new ApiError(400, "BAD_REQUEST", "The account identifier is invalid.");
-  }
-
-  const objectKey = `profile-photos/${userId}/${randomUUID()}.${imageTypes[mimeType]}`;
-  const filePath = join(profilePhotoUploadDirectory(), ...objectKey.split("/"));
-  await mkdir(join(filePath, ".."), { recursive: true });
-  await writeFile(filePath, data, { flag: "wx", mode: 0o640 });
-  return { objectKey, filePath };
-}
-
-export async function removeStoredProfilePhoto(filePath: string): Promise<void> {
-  await unlink(filePath).catch((error: NodeJS.ErrnoException) => {
-    if (error.code !== "ENOENT") throw error;
-  });
+  return `db-photo:${randomUUID()}:data:${mimeType};base64,${data.toString("base64")}`;
 }

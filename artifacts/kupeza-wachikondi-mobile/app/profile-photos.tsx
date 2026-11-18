@@ -125,7 +125,7 @@ export default function ProfilePhotosScreen() {
       ]);
       Alert.alert(
         'Photo saved',
-        'You can see it on your profile now. It will appear to other people after review.',
+        'Your photo is saved to your account and visible to other people across devices.',
       );
       router.back();
     } catch (error) {
@@ -244,14 +244,13 @@ export default function ProfilePhotosScreen() {
               Your uploaded photo
             </Text>
             <Text style={[styles.notice, { color: colors.mutedForeground }]}>
-              It is visible to you now and will appear publicly after review.
+              It is saved to your account and visible to other people across devices.
             </Text>
           </View>
         </View>
       ) : null}
       <Text style={[styles.storageNote, { color: colors.mutedForeground }]}>
-        Upload storage is temporary in this deployment. Photos may be cleared when
-        the server is redeployed.
+        Uploaded photos are saved with your profile and sync across devices.
       </Text>
       {photoError ? (
         <Text accessibilityRole="alert" style={[styles.error, { color: colors.primary }]}>
