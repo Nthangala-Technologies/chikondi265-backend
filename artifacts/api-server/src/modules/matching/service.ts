@@ -27,7 +27,11 @@ export async function getDiscovery(
     );
   }
 
-  return findDiscoveryPage(viewer, limit, after);
+  const page = await findDiscoveryPage(viewer, limit, after);
+  return {
+    ...page,
+    items: page.items.filter((profile) => profile.userId !== viewer.userId),
+  };
 }
 
 export async function searchPublicProfiles(userId: string, query: string) {
