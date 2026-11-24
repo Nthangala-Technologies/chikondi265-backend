@@ -11,11 +11,13 @@ import preferencesRouter from "./preferences";
 import realtimeRouter from "./realtime";
 import searchRouter from "./search";
 import safetyRouter from "./safety";
+import subscriptionsRouter from "./subscriptions";
 import swipesRouter from "./swipes";
 
 const router: IRouter = Router();
 
 router.use(authRouter);
+router.use(subscriptionsRouter);
 router.use(meRouter);
 router.use(preferencesRouter);
 router.use(discoveryRouter);

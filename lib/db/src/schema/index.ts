@@ -5,3 +5,4 @@ export * from "./matching";
 export * from "./payments";
 export * from "./messages";
 export * from "./safety";
+export * from "./subscriptions";

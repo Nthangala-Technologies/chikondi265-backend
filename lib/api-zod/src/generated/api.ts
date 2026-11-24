@@ -830,6 +830,21 @@ export const CreatePaymentIntentResponse = zod.object({
 
 
 /**
+ * @summary List the current chat subscription plans and account entitlement
+ */
+
+
+
+export const GetSubscriptionPlansResponse = zod.object({
+  "items": zod.array(zod.object({
+  "plan": zod.enum(['daily', 'weekly', 'monthly']),
+  "amountMwk": zod.number().int().min(1)
+})),
+  "activeUntil": zod.string().datetime({"offset":true}).nullable()
+})
+
+
+/**
  * @summary Receive a signature-verified PayChangu webhook
  */
 export const ReceivePaychanguWebhookHeader = zod.object({

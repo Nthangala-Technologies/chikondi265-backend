@@ -1106,6 +1106,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/subscriptions/plans:
+    get:
+      operationId: getSubscriptionPlans
+      tags: [subscriptions]
+      summary: List the current chat subscription plans and account entitlement
+      responses:
+        "200":
+          description: Database-backed prices and active subscription expiry, if any
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionPlansResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
   /v1/payments/paychangu/webhook:
     post:
       operationId: receivePaychanguWebhook
@@ -1763,6 +1781,27 @@ components:
         - chatEnabledAt
         - otherProfile
         - lastMessage
+    SubscriptionPlan:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [daily, weekly, monthly]
+        amountMwk:
+          type: integer
+          minimum: 1
+      required: [plan, amountMwk]
+    SubscriptionPlansResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubscriptionPlan"
+        activeUntil:
+          type: ["string", "null"]
+          format: date-time
+      required: [items, activeUntil]
     CreateConnectionMessageInput:
       type: object
       additionalProperties: false
