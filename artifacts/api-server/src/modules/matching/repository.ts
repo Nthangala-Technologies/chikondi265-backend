@@ -12,6 +12,7 @@ import {
   notExists,
   or,
   sql,
+  type SQL,
 } from "drizzle-orm";
 import {
   blocksTable,
@@ -37,6 +38,7 @@ import {
   profilePhotoUrlFromObjectKey,
   type GeneratedProfileAvatarId,
 } from "../profiles/avatars";
+import { findActiveSubscription } from "../subscriptions/repository";
 
 type MatchingExecutor = Pick<typeof db, "select">;
 
@@ -57,7 +59,7 @@ export interface ConnectionView {
   id: string;
   status: string;
   matchedAt: Date;
-  chatEnabledAt: Date | null;
+  isChatEligible: boolean;
   otherProfile: PublicProfile | null;
   lastMessage: {
     body: string;
@@ -175,7 +177,10 @@ function candidateEligibility(viewer: MatchingViewer) {
   ];
 }
 
-function notBlockedEitherWay(viewerId: string) {
+function notBlockedEitherWay(
+  viewerId: string,
+  otherUserId: typeof profilesTable.userId | SQL<string> = profilesTable.userId,
+) {
   return notExists(
     db
       .select({ one: sql`1` })
@@ -184,10 +189,10 @@ function notBlockedEitherWay(viewerId: string) {
         or(
           and(
             eq(blocksTable.blockerUserId, viewerId),
-            eq(blocksTable.blockedUserId, profilesTable.userId),
+            eq(blocksTable.blockedUserId, otherUserId),
           ),
           and(
-            eq(blocksTable.blockerUserId, profilesTable.userId),
+            eq(blocksTable.blockerUserId, otherUserId),
             eq(blocksTable.blockedUserId, viewerId),
           ),
         ),
@@ -367,7 +372,7 @@ export async function findUserNotifications(
   const [likes, connections, unreadMessages] = await Promise.all([
     findIncomingLikes(userId),
     findConnectionsForUser(userId),
-    db
+    findActiveSubscription(userId).then((subscription) => !subscription ? [] : db
       .select({
         id: messagesTable.id,
         connectionId: messagesTable.connectionId,
@@ -388,7 +393,7 @@ export async function findUserNotifications(
             eq(connectionsTable.userLowId, userId),
             eq(connectionsTable.userHighId, userId),
           ),
-          eq(connectionsTable.status, "chat_enabled"),
+          inArray(connectionsTable.status, ["matched", "chat_enabled"]),
           isNull(connectionsTable.closedAt),
           ne(messagesTable.senderUserId, userId),
           isNull(messagesTable.readAt),
@@ -399,7 +404,7 @@ export async function findUserNotifications(
         ),
       )
       .orderBy(desc(messagesTable.createdAt))
-      .limit(30),
+      .limit(30)),
   ]);
 
   for (const like of likes) {
@@ -664,6 +669,14 @@ function otherParticipantId(userId: string) {
   end`;
 }
 
+function isChatEligible(userId: string) {
+  return sql<boolean>`(
+    ${connectionsTable.status} in ('matched', 'chat_enabled')
+    and ${connectionsTable.closedAt} is null
+    and ${notBlockedEitherWay(userId, otherParticipantId(userId))}
+  )`;
+}
+
 function latestMessagePreview(userId: string) {
   const clearedAt = sql`case
     when ${connectionsTable.userLowId} = ${userId}
@@ -694,7 +707,7 @@ export async function findConnectionsForUser(
       id: connectionsTable.id,
       status: connectionsTable.status,
       matchedAt: connectionsTable.matchedAt,
-      chatEnabledAt: connectionsTable.chatEnabledAt,
+      isChatEligible: isChatEligible(userId),
       otherUserId: otherParticipantId(userId),
       lastMessage: latestMessagePreview(userId),
     })
@@ -727,7 +740,7 @@ export async function findConnectionForUser(
       id: connectionsTable.id,
       status: connectionsTable.status,
       matchedAt: connectionsTable.matchedAt,
-      chatEnabledAt: connectionsTable.chatEnabledAt,
+      isChatEligible: isChatEligible(userId),
       otherUserId: otherParticipantId(userId),
       lastMessage: latestMessagePreview(userId),
     })
@@ -752,7 +765,7 @@ export async function findConnectionForUser(
     id: row.id,
     status: row.status,
     matchedAt: row.matchedAt,
-    chatEnabledAt: row.chatEnabledAt,
+    isChatEligible: row.isChatEligible,
     otherProfile,
     lastMessage: row.lastMessage,
   };

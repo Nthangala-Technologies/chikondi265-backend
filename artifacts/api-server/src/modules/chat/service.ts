@@ -13,6 +13,7 @@ import {
   updateConnectionMessage,
 } from "./repository";
 import { publishUserDataUpdates } from "../realtime/service";
+import { findActiveSubscription } from "../subscriptions/repository";
 import {
   publishConnectionEvent,
   publishConnectionMessage,
@@ -86,7 +87,7 @@ function decodeCursor(value: string): MessageCursor {
 export async function assertChatAccess(
   userId: string,
   connectionId: string,
-): Promise<NonNullable<Awaited<ReturnType<typeof findChatAccess>>>> {
+) {
   const access = await findChatAccess(userId, connectionId);
   if (!access) {
     throw new ApiError(
@@ -95,7 +96,11 @@ export async function assertChatAccess(
       "Chat is unavailable for this connection.",
     );
   }
-  return access;
+  const subscription = await findActiveSubscription(userId);
+  if (!subscription) {
+    throw new ApiError(403, "FORBIDDEN", "An active chat subscription is required.");
+  }
+  return { ...access, subscriptionExpiresAt: subscription.expiresAt };
 }
 
 function assertMessageActionWindow(

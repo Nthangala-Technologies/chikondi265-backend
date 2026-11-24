@@ -1049,77 +1049,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorEnvelope"
-  /v1/connections/{id}/payment-intents:
-    post:
-      operationId: createPaymentIntent
-      tags: [payments]
-      summary: Create a payment intent for a matched connection
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PaymentIntentInput"
-      responses:
-        "200":
-          description: PayChangu checkout details
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PaymentIntentResponse"
-        "400":
-          description: Invalid payment-intent request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiErrorEnvelope"
-        "401":
-          description: Missing or invalid authentication
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiErrorEnvelope"
-        "403":
-          description: Caller is not a participant or connection is not payable
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiErrorEnvelope"
-        "404":
-          description: Connection not found or not accessible
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiErrorEnvelope"
-        "409":
-          description: Payment already succeeded or idempotency conflict
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiErrorEnvelope"
   /v1/subscriptions/plans:
     get:
       operationId: getSubscriptionPlans
       tags: [subscriptions]
       summary: List the current chat subscription plans and account entitlement
+      security:
+        - bearerAuth: []
       responses:
         "200":
-          description: Database-backed prices and active subscription expiry, if any
+          description: Database-backed prices and the caller's active subscription end date
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SubscriptionPlansResponse"
         "401":
-          description: Not authenticated
+          description: Missing or invalid authentication
           content:
             application/json:
               schema:
@@ -1208,6 +1153,10 @@ components:
         birthDate:
           type: string
           format: date
+        gender:
+          type: string
+          nullable: true
+          enum: [male, female, unspecified]
         city:
           type: string
           minLength: 1
@@ -1298,6 +1247,10 @@ components:
         birthDate:
           type: string
           format: date
+        gender:
+          type: string
+          nullable: true
+          enum: [male, female, unspecified]
         city:
           type: string
           minLength: 1
@@ -1345,6 +1298,10 @@ components:
         birthDate:
           type: string
           format: date
+        gender:
+          type: string
+          nullable: true
+          enum: [male, female, unspecified]
         city:
           type: string
         countryCode:
@@ -1362,6 +1319,8 @@ components:
           type: string
         verificationStatus:
           type: string
+        hasPhoto:
+          type: boolean
         photoId:
           type: string
           enum: [woman-01, woman-02, woman-03, man-01, man-02, man-03]
@@ -1380,6 +1339,7 @@ components:
         - username
         - displayName
         - birthDate
+        - gender
         - city
         - countryCode
         - bio
@@ -1387,6 +1347,7 @@ components:
         - intention
         - visibilityStatus
         - verificationStatus
+        - hasPhoto
         - photoId
         - createdAt
         - updatedAt
@@ -1766,6 +1727,13 @@ components:
         chatEnabledAt:
           type: ["string", "null"]
           format: date-time
+          description: Active subscription start, for older clients; not a per-chat payment
+        chatAccess:
+          type: string
+          enum: [available, subscription_required, unavailable]
+        chatAccessExpiresAt:
+          type: ["string", "null"]
+          format: date-time
         otherProfile:
           anyOf:
             - $ref: "#/components/schemas/PublicProfile"
@@ -1779,10 +1747,13 @@ components:
         - status
         - matchedAt
         - chatEnabledAt
+        - chatAccess
+        - chatAccessExpiresAt
         - otherProfile
         - lastMessage
     SubscriptionPlan:
       type: object
+      additionalProperties: false
       properties:
         plan:
           type: string
@@ -1793,6 +1764,7 @@ components:
       required: [plan, amountMwk]
     SubscriptionPlansResponse:
       type: object
+      additionalProperties: false
       properties:
         items:
           type: array
@@ -2005,3 +1977,4 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
+

@@ -615,7 +615,9 @@ export const GetConnectionsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "status": zod.enum(['matched', 'chat_enabled', 'closed']),
   "matchedAt": zod.string().datetime({"offset":true}),
-  "chatEnabledAt": zod.string().datetime({"offset":true}).nullable(),
+  "chatEnabledAt": zod.string().datetime({"offset":true}).nullable().describe('Active subscription start, for older clients; not a per-chat payment'),
+  "chatAccess": zod.enum(['available', 'subscription_required', 'unavailable']),
+  "chatAccessExpiresAt": zod.string().datetime({"offset":true}).nullable(),
   "otherProfile": zod.union([zod.object({
   "userId": zod.string().uuid(),
   "displayName": zod.string(),
@@ -653,7 +655,9 @@ export const GetConnectionResponse = zod.object({
   "id": zod.string().uuid(),
   "status": zod.enum(['matched', 'chat_enabled', 'closed']),
   "matchedAt": zod.string().datetime({"offset":true}),
-  "chatEnabledAt": zod.string().datetime({"offset":true}).nullable(),
+  "chatEnabledAt": zod.string().datetime({"offset":true}).nullable().describe('Active subscription start, for older clients; not a per-chat payment'),
+  "chatAccess": zod.enum(['available', 'subscription_required', 'unavailable']),
+  "chatAccessExpiresAt": zod.string().datetime({"offset":true}).nullable(),
   "otherProfile": zod.union([zod.object({
   "userId": zod.string().uuid(),
   "displayName": zod.string(),
@@ -808,24 +812,17 @@ export const GetConnectionMessagesAfterCursorResponse = zod.object({
 
 
 /**
- * @summary Create a payment intent for a matched connection
+ * @summary List the current chat subscription plans and account entitlement
  */
-export const CreatePaymentIntentParams = zod.object({
-  "id": zod.coerce.string().uuid()
-})
-
-export const createPaymentIntentBodyIdempotencyKeyMax = 255;
 
 
 
-export const CreatePaymentIntentBody = zod.object({
-  "idempotencyKey": zod.string().min(1).max(createPaymentIntentBodyIdempotencyKeyMax).optional()
-})
-
-export const CreatePaymentIntentResponse = zod.object({
-  "checkoutUrl": zod.string().url(),
-  "txRef": zod.string(),
-  "paymentAttemptId": zod.string().uuid()
+export const GetSubscriptionPlansResponse = zod.object({
+  "items": zod.array(zod.object({
+  "plan": zod.enum(['daily', 'weekly', 'monthly']),
+  "amountMwk": zod.number().int().min(1)
+})),
+  "activeUntil": zod.string().datetime({"offset":true}).nullable()
 })
 
 

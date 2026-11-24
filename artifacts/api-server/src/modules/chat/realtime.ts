@@ -7,13 +7,12 @@ import { resolveSession } from "../auth/service";
 import { assertChatAccess, type SerializedConnectionMessage } from "./service";
 
 const rooms = new Map<string, Set<WebSocket>>();
-const socketUsers = new WeakMap<WebSocket, string>();
+type ChatSocketAuth = { connectionId: string; userId: string; expiresAt: number };
+const socketAccess = new WeakMap<WebSocket, ChatSocketAuth>();
 const roomTimers = new Map<string, NodeJS.Timeout>();
 const websocketServer = new WebSocketServer({ noServer: true, maxPayload: 2 * 1024 });
 const sessionTokenPattern = /^[A-Za-z0-9_-]{43}$/;
 const connectionIdPattern = /^[0-9a-f-]{36}$/i;
-
-type ChatSocketAuth = { connectionId: string; userId: string };
 
 class ChatSocketAuthError extends Error {
   constructor(
@@ -52,26 +51,24 @@ function removeSocket(connectionId: string, socket: WebSocket): void {
   roomTimers.delete(connectionId);
 }
 
-function addSocket(connectionId: string, userId: string, socket: WebSocket): void {
+function addSocket(auth: ChatSocketAuth, socket: WebSocket): void {
+  const { connectionId } = auth;
   const room = rooms.get(connectionId) ?? new Set<WebSocket>();
   room.add(socket);
   rooms.set(connectionId, room);
-  socketUsers.set(socket, userId);
+  socketAccess.set(socket, auth);
 
   if (!roomTimers.has(connectionId)) {
     const timer = setInterval(() => {
-      const firstSocket = rooms.get(connectionId)?.values().next().value as
-        | WebSocket
-        | undefined;
-      if (!firstSocket || firstSocket.readyState !== WebSocket.OPEN) return;
-      const firstUserId = socketUsers.get(firstSocket);
-      if (!firstUserId) return;
-
-      void assertChatAccess(firstUserId, connectionId).catch(() => {
-        for (const member of rooms.get(connectionId) ?? []) {
-          member.close(4403, "Chat access was revoked");
-        }
-      });
+      for (const member of rooms.get(connectionId) ?? []) {
+        const access = socketAccess.get(member);
+        if (!access || member.readyState !== WebSocket.OPEN) continue;
+        void assertChatAccess(access.userId, connectionId)
+          .then((current) => {
+            access.expiresAt = current.subscriptionExpiresAt.getTime();
+          })
+          .catch(() => member.close(4403, "Chat access was revoked"));
+      }
     }, 15_000);
     timer.unref();
     roomTimers.set(connectionId, timer);
@@ -111,12 +108,11 @@ async function authenticateCredentials(
   }
 
   try {
-    await assertChatAccess(session.userId, connectionId);
+    const access = await assertChatAccess(session.userId, connectionId);
+    return { connectionId, userId: session.userId, expiresAt: access.subscriptionExpiresAt.getTime() };
   } catch {
     throw new ChatSocketAuthError("FORBIDDEN", "Chat is unavailable.");
   }
-
-  return { connectionId, userId: session.userId };
 }
 
 async function authenticateUpgrade(
@@ -157,7 +153,7 @@ export function attachChatWebSocket(server: Server): void {
 
         websocketServer.handleUpgrade(request, socket, head, (client) => {
           if (auth !== "awaiting-message-auth") {
-            addSocket(auth.connectionId, auth.userId, client);
+            addSocket(auth, client);
             return;
           }
 
@@ -189,7 +185,7 @@ export function attachChatWebSocket(server: Server): void {
                 );
                 if (client.readyState !== WebSocket.OPEN) return;
                 clearTimeout(authTimeout);
-                addSocket(verified.connectionId, verified.userId, client);
+                addSocket(verified, client);
               } catch (error) {
                 const code =
                   error instanceof ChatSocketAuthError
@@ -225,7 +221,7 @@ export function publishConnectionMessage(
 ): void {
   const payload = JSON.stringify({ type: "message", message });
   for (const socket of rooms.get(connectionId) ?? []) {
-    if (socket.readyState === WebSocket.OPEN) socket.send(payload);
+    sendToActiveSubscriber(socket, payload);
   }
 }
 
@@ -248,8 +244,18 @@ export function publishConnectionEvent(
 ): void {
   const payload = JSON.stringify(event);
   for (const socket of rooms.get(connectionId) ?? []) {
-    if (socket.readyState === WebSocket.OPEN) socket.send(payload);
+    sendToActiveSubscriber(socket, payload);
   }
+}
+
+function sendToActiveSubscriber(socket: WebSocket, payload: string) {
+  if (socket.readyState !== WebSocket.OPEN) return;
+  const access = socketAccess.get(socket);
+  if (!access || access.expiresAt <= Date.now()) {
+    socket.close(4403, "Chat subscription expired");
+    return;
+  }
+  socket.send(payload);
 }
 
 export function publishConnectionClosed(connectionId: string): void {

@@ -359,17 +359,6 @@ export async function completePayChanguPayment(input: {
       })
       .where(eq(paymentAttemptsTable.id, attempt.id));
 
-    if (connection.status === "matched") {
-      await tx
-        .update(connectionsTable)
-        .set({
-          status: "chat_enabled",
-          chatEnabledAt: now,
-          updatedAt: now,
-        })
-        .where(eq(connectionsTable.id, connection.id));
-    }
-
     await tx
       .update(providerEventsTable)
       .set({

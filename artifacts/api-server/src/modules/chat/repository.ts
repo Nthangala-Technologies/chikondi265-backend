@@ -49,7 +49,7 @@ export async function findChatAccess(
   if (
     !connection ||
     (connection.userLowId !== userId && connection.userHighId !== userId) ||
-    connection.status !== "chat_enabled" ||
+    !["matched", "chat_enabled"].includes(connection.status) ||
     connection.closedAt
   ) {
     return null;

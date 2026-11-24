@@ -14,6 +14,7 @@ export * from './blockResult';
 export * from './changePasswordInput';
 export * from './changePasswordResponse';
 export * from './connection';
+export * from './connectionChatAccess';
 export * from './connectionMessage';
 export * from './connectionMessagePage';
 export * from './connectionMessagePreview';
