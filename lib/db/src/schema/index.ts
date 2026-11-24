@@ -6,3 +6,4 @@ export * from "./payments";
 export * from "./messages";
 export * from "./safety";
 export * from "./subscriptions";
+export * from "./chat-media";

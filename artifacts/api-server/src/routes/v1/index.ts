@@ -13,7 +13,6 @@ import searchRouter from "./search";
 import safetyRouter from "./safety";
 import subscriptionsRouter from "./subscriptions";
 import swipesRouter from "./swipes";
-import subscriptionsRouter from "./subscriptions";
 
 const router: IRouter = Router();
 

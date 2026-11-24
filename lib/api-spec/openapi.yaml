@@ -1069,6 +1069,72 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/subscriptions/checkout:
+    post:
+      operationId: createSubscriptionCheckout
+      tags: [subscriptions]
+      summary: Create a PayChangu checkout for a database-priced subscription
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscriptionCheckoutInput"
+      responses:
+        "201":
+          description: Hosted checkout URL and transaction reference
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionCheckoutResponse"
+        "400":
+          description: Invalid request or stale plan price
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+  /v1/subscriptions/checkout/{txRef}/verify:
+    post:
+      operationId: verifySubscriptionCheckout
+      tags: [subscriptions]
+      summary: Verify a user's PayChangu transaction and activate the subscription
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: txRef
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+      responses:
+        "200":
+          description: Current verification state and latest subscription expiry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionPaymentVerificationResponse"
+        "401":
+          description: Missing or invalid authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
+        "404":
+          description: Checkout does not belong to the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorEnvelope"
   /v1/payments/paychangu/webhook:
     post:
       operationId: receivePaychanguWebhook
@@ -1774,6 +1840,48 @@ components:
           type: ["string", "null"]
           format: date-time
       required: [items, activeUntil]
+    SubscriptionCheckoutInput:
+      type: object
+      additionalProperties: false
+      properties:
+        plan:
+          type: string
+          enum: [daily, weekly, monthly]
+        amountMwk:
+          type: integer
+          minimum: 1
+        idempotencyKey:
+          type: string
+          minLength: 16
+          maxLength: 160
+      required: [plan, amountMwk, idempotencyKey]
+    SubscriptionCheckoutResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        checkoutUrl:
+          type: string
+          format: uri
+        txRef:
+          type: string
+        paymentAttemptId:
+          type: string
+          format: uuid
+        amountMwk:
+          type: integer
+          minimum: 1
+      required: [checkoutUrl, txRef, paymentAttemptId, amountMwk]
+    SubscriptionPaymentVerificationResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [pending, succeeded, failed]
+        activeUntil:
+          type: ["string", "null"]
+          format: date-time
+      required: [status, activeUntil]
     CreateConnectionMessageInput:
       type: object
       additionalProperties: false

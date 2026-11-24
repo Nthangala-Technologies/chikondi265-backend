@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ApiError } from "../../middleware/error-handler";
 import { requireUser } from "../../middleware/require-user";
 import { receivePayChanguWebhook } from "../../modules/payments/service";
+import { verifySubscriptionCheckoutReturn } from "../../modules/subscriptions/payments-service";
 
 const router = Router();
 export const payChanguWebhookRouter = Router();
@@ -10,7 +11,7 @@ export const payChanguReturnRouter = Router();
 function paymentReturnPage(success: boolean): string {
   const title = success ? "Payment Successful!" : "Payment not completed";
   const description = success
-    ? "You can check your payment history in the app."
+    ? "Your payment was verified. Return to the app to use your subscription."
     : "No payment was confirmed. You can return to the app and try again.";
   const icon = success ? "✓" : "×";
   const iconClass = success ? "success" : "failure";
@@ -51,9 +52,14 @@ function paymentReturnPage(success: boolean): string {
 </html>`;
 }
 
-payChanguReturnRouter.get("/success", (_req, res) => {
+payChanguReturnRouter.get("/success", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.type("html").send(paymentReturnPage(true));
+  const txRef =
+    typeof req.query.tx_ref === "string" ? req.query.tx_ref.trim() : "";
+  const paid = txRef
+    ? await verifySubscriptionCheckoutReturn(txRef)
+    : false;
+  res.type("html").send(paymentReturnPage(paid));
 });
 
 payChanguReturnRouter.get("/failure", (_req, res) => {

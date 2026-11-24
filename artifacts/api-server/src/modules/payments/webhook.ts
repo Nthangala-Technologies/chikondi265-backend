@@ -5,13 +5,9 @@ import {
 } from "node:crypto";
 import { ApiError } from "../../middleware/error-handler";
 import { PayChanguProviderError, type PayChanguVerification } from "./paychangu-provider";
+import type { PayChanguAttempt } from "../subscriptions/payments-repository";
 
-export type PayChanguWebhookAttempt = {
-  id: string;
-  connectionId: string;
-  txRef: string;
-  status: string;
-};
+export type PayChanguWebhookAttempt = PayChanguAttempt;
 
 export type PayChanguWebhookDependencies = {
   webhookSecret: string | undefined;
@@ -26,11 +22,11 @@ export type PayChanguWebhookDependencies = {
   verifyTransaction(txRef: string): Promise<PayChanguVerification>;
   markEventFailed(eventId: string, errorCode: string): Promise<void>;
   completePayment(input: {
-    attemptId: string;
+    attempt: PayChanguWebhookAttempt;
     eventId: string;
     providerTransactionId: string | null;
   }): Promise<void>;
-  findParticipantIds(connectionId: string): Promise<string[]>;
+  findAffectedUserIds(attempt: PayChanguWebhookAttempt): Promise<string[]>;
   publishUpdates(userIds: string[]): Promise<void>;
 };
 
@@ -149,20 +145,19 @@ export async function processPayChanguWebhook(
   if (
     verification.txRef !== attempt.txRef ||
     verification.status !== "success" ||
-    verification.amount !== 5000 ||
-    verification.currency !== "MWK"
+    verification.amount !== attempt.amountMwk ||
+    verification.currency !== attempt.currency
   ) {
     await dependencies.markEventFailed(eventId, "VERIFICATION_MISMATCH");
     return;
   }
 
   await dependencies.completePayment({
-    attemptId: attempt.id,
+    attempt,
     eventId,
     providerTransactionId: verification.providerTransactionId,
   });
-  const participants = await dependencies.findParticipantIds(
-    attempt.connectionId,
+  await dependencies.publishUpdates(
+    await dependencies.findAffectedUserIds(attempt),
   );
-  await dependencies.publishUpdates(participants);
 }

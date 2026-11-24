@@ -4,8 +4,10 @@ import {
   db,
   paymentAttemptsTable,
   providerEventsTable,
+  subscriptionPaymentAttemptsTable,
 } from "@workspace/db";
 import { ApiError } from "../../middleware/error-handler";
+import type { PayChanguAttempt } from "../subscriptions/payments-repository";
 
 type PaymentAttemptView = {
   id: string;
@@ -219,16 +221,44 @@ export async function recordPayChanguWebhookEvent(input: {
   eventType: string;
   payloadSha256: string;
 }) {
-  const [attempt] = await db
+  const [chatAttempt] = await db
     .select({
       id: paymentAttemptsTable.id,
       connectionId: paymentAttemptsTable.connectionId,
       txRef: paymentAttemptsTable.txRef,
+      amountMwk: paymentAttemptsTable.amountMwk,
+      currency: paymentAttemptsTable.currency,
       status: paymentAttemptsTable.status,
     })
     .from(paymentAttemptsTable)
     .where(inArray(paymentAttemptsTable.txRef, input.txRefCandidates))
     .limit(1);
+
+  let attempt: PayChanguAttempt | null = chatAttempt
+    ? { ...chatAttempt, kind: "chat" }
+    : null;
+  if (!attempt) {
+    const [subscriptionAttempt] = await db
+      .select({
+        id: subscriptionPaymentAttemptsTable.id,
+        userId: subscriptionPaymentAttemptsTable.userId,
+        txRef: subscriptionPaymentAttemptsTable.txRef,
+        amountMwk: subscriptionPaymentAttemptsTable.amountMwk,
+        currency: subscriptionPaymentAttemptsTable.currency,
+        status: subscriptionPaymentAttemptsTable.status,
+      })
+      .from(subscriptionPaymentAttemptsTable)
+      .where(
+        inArray(
+          subscriptionPaymentAttemptsTable.txRef,
+          input.txRefCandidates,
+        ),
+      )
+      .limit(1);
+    attempt = subscriptionAttempt
+      ? { ...subscriptionAttempt, kind: "subscription" }
+      : null;
+  }
 
   const eventTxRef = attempt?.txRef ?? input.txRefCandidates[0];
   const isIgnored = !attempt;

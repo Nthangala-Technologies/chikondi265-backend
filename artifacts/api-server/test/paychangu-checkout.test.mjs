@@ -31,7 +31,7 @@ test("PayChangu uses HTTPS app-return endpoints, separate from the webhook", asy
 
   process.env.PAYCHANGU_SECRET_KEY = "test-only";
   process.env.PAYCHANGU_WEBHOOK_URL =
-    "https://chikondi265.zapto.org/api/v1/payments/paychangu/webhook";
+    "https://chikondi265-chikondi265-dfwtab-894778-102-202-46-218.sslip.io/api/v1/payments/paychangu/webhook";
   globalThis.fetch = async (_url, options) => {
     requestBody = JSON.parse(options.body);
     return new Response(
@@ -51,11 +51,11 @@ test("PayChangu uses HTTPS app-return endpoints, separate from the webhook", asy
   assert.equal(checkoutUrl, "https://checkout.paychangu.com/test-only");
   assert.equal(
     requestBody.callback_url,
-    "https://chikondi265.zapto.org/api/v1/payments/paychangu/return/success",
+    "https://chikondi265-chikondi265-dfwtab-894778-102-202-46-218.sslip.io/api/v1/payments/paychangu/return/success?tx_ref=test-only",
   );
   assert.equal(
     requestBody.return_url,
-    "https://chikondi265.zapto.org/api/v1/payments/paychangu/return/failure",
+    "https://chikondi265-chikondi265-dfwtab-894778-102-202-46-218.sslip.io/api/v1/payments/paychangu/return/failure?tx_ref=test-only",
   );
   assert.ok(!requestBody.callback_url.endsWith("/webhook"));
   assert.ok(!requestBody.return_url.endsWith("/webhook"));

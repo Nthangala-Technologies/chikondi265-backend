@@ -827,16 +827,44 @@ export const GetSubscriptionPlansResponse = zod.object({
 
 
 /**
- * @summary List the current chat subscription plans and account entitlement
+ * @summary Create a PayChangu checkout for a database-priced subscription
  */
 
+export const createSubscriptionCheckoutBodyIdempotencyKeyMin = 16;
+export const createSubscriptionCheckoutBodyIdempotencyKeyMax = 160;
 
 
-export const GetSubscriptionPlansResponse = zod.object({
-  "items": zod.array(zod.object({
+
+export const CreateSubscriptionCheckoutBody = zod.object({
   "plan": zod.enum(['daily', 'weekly', 'monthly']),
+  "amountMwk": zod.number().int().min(1),
+  "idempotencyKey": zod.string().min(createSubscriptionCheckoutBodyIdempotencyKeyMin).max(createSubscriptionCheckoutBodyIdempotencyKeyMax)
+})
+
+
+
+
+export const CreateSubscriptionCheckoutResponse = zod.object({
+  "checkoutUrl": zod.string().url(),
+  "txRef": zod.string(),
+  "paymentAttemptId": zod.string().uuid(),
   "amountMwk": zod.number().int().min(1)
-})),
+})
+
+
+/**
+ * @summary Verify a user's PayChangu transaction and activate the subscription
+ */
+export const verifySubscriptionCheckoutPathTxRefMax = 100;
+
+
+
+export const VerifySubscriptionCheckoutParams = zod.object({
+  "txRef": zod.coerce.string().min(1).max(verifySubscriptionCheckoutPathTxRefMax)
+})
+
+export const VerifySubscriptionCheckoutResponse = zod.object({
+  "status": zod.enum(['pending', 'succeeded', 'failed']),
   "activeUntil": zod.string().datetime({"offset":true}).nullable()
 })
 

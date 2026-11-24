@@ -1,6 +1,9 @@
 import { publishUserDataUpdates } from "../realtime/service";
 import { verifyPayChanguTransaction } from "./paychangu-provider";
 import {
+  completePayChanguSubscriptionPayment,
+} from "../subscriptions/payments-repository";
+import {
   completePayChanguPayment,
   findConnectionParticipantIds,
   listPaymentHistoryForUser,
@@ -8,6 +11,7 @@ import {
   recordPayChanguWebhookEvent,
 } from "./repository";
 import { processPayChanguWebhook } from "./webhook";
+import type { PayChanguWebhookAttempt } from "./webhook";
 
 export async function getCurrentUserPaymentHistory(payerUserId: string) {
   const items = await listPaymentHistoryForUser(payerUserId);
@@ -28,8 +32,25 @@ export async function receivePayChanguWebhook(
     recordEvent: recordPayChanguWebhookEvent,
     verifyTransaction: verifyPayChanguTransaction,
     markEventFailed: markPayChanguWebhookFailed,
-    completePayment: completePayChanguPayment,
-    findParticipantIds: findConnectionParticipantIds,
+    async completePayment({ attempt, eventId, providerTransactionId }) {
+      if (attempt.kind === "subscription") {
+        await completePayChanguSubscriptionPayment({
+          attemptId: attempt.id,
+          eventId,
+          providerTransactionId,
+        });
+        return;
+      }
+      await completePayChanguPayment({
+        attemptId: attempt.id,
+        eventId,
+        providerTransactionId,
+      });
+    },
+    async findAffectedUserIds(attempt: PayChanguWebhookAttempt) {
+      if (attempt.kind === "subscription") return [attempt.userId];
+      return findConnectionParticipantIds(attempt.connectionId);
+    },
     publishUpdates: publishUserDataUpdates,
   });
 }

@@ -42,7 +42,10 @@ function getSafeProviderMessage(value: unknown): string | null {
     : null;
 }
 
-function getPaymentRedirectUrls(): { callbackUrl: string; returnUrl: string } {
+function getPaymentRedirectUrls(txRef: string): {
+  callbackUrl: string;
+  returnUrl: string;
+} {
   let webhookUrl: URL;
   try {
     webhookUrl = new URL(process.env.PAYCHANGU_WEBHOOK_URL ?? "");
@@ -59,15 +62,19 @@ function getPaymentRedirectUrls(): { callbackUrl: string; returnUrl: string } {
     );
   }
 
+  const callbackUrl = new URL(
+    "/api/v1/payments/paychangu/return/success",
+    webhookUrl.origin,
+  );
+  callbackUrl.searchParams.set("tx_ref", txRef);
+  const returnUrl = new URL(
+    "/api/v1/payments/paychangu/return/failure",
+    webhookUrl.origin,
+  );
+  returnUrl.searchParams.set("tx_ref", txRef);
   return {
-    callbackUrl: new URL(
-      "/api/v1/payments/paychangu/return/success",
-      webhookUrl.origin,
-    ).toString(),
-    returnUrl: new URL(
-      "/api/v1/payments/paychangu/return/failure",
-      webhookUrl.origin,
-    ).toString(),
+    callbackUrl: callbackUrl.toString(),
+    returnUrl: returnUrl.toString(),
   };
 }
 
@@ -83,7 +90,7 @@ export async function createPayChanguCheckout(input: {
     );
   }
 
-  const { callbackUrl, returnUrl } = getPaymentRedirectUrls();
+  const { callbackUrl, returnUrl } = getPaymentRedirectUrls(input.txRef);
 
   let response: Response;
   try {
